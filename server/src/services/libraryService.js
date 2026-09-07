@@ -54,7 +54,7 @@ async function issueLoan(bookId, learnerId, loanRequestId) {
     dueAt,
   });
 
-  transitionStatus(book, 'status', ['AVAILABLE'], 'ON_LOAN');
+  await transitionStatus(book, 'status', ['AVAILABLE'], 'ON_LOAN', 'UC-LIB-902');
   await book.save();
 
   return loan;
@@ -64,11 +64,11 @@ async function issueLoan(bookId, learnerId, loanRequestId) {
 async function approveLoanRequest(loanRequestId) {
   const loanRequest = await LoanRequest.findById(loanRequestId);
   ensureExists(loanRequest, 'Loan request');
-  transitionStatus(loanRequest, 'status', ['PENDING'], 'APPROVED');
+  await transitionStatus(loanRequest, 'status', ['PENDING'], 'APPROVED', 'UC-LIB-901');
 
   const loan = await issueLoan(loanRequest.book, loanRequest.learner, loanRequest._id);
 
-  loanRequest.status = 'FULFILLED';
+  await transitionStatus(loanRequest, 'status', ['APPROVED'], 'FULFILLED', 'UC-LIB-901');
   await loanRequest.save();
 
   return loan;
@@ -78,13 +78,13 @@ async function approveLoanRequest(loanRequestId) {
 async function returnLoan(loanId) {
   const loan = await Loan.findById(loanId);
   ensureExists(loan, 'Loan');
-  transitionStatus(loan, 'status', ['ACTIVE'], 'RETURNED');
+  await transitionStatus(loan, 'status', ['ACTIVE'], 'RETURNED', 'UC-LIB-902');
   loan.returnedAt = new Date();
   await loan.save();
 
   const book = await Book.findById(loan.book);
   ensureExists(book, 'Book');
-  transitionStatus(book, 'status', ['ON_LOAN'], 'AVAILABLE');
+  await transitionStatus(book, 'status', ['ON_LOAN'], 'AVAILABLE', 'UC-LIB-902');
   await book.save();
 
   let fine = null;
@@ -124,7 +124,7 @@ async function reserveBook(bookId, learnerId, slotStart, slotEnd) {
 async function cancelReservation(reservationId) {
   const reservation = await BookReservation.findById(reservationId);
   ensureExists(reservation, 'Reservation');
-  transitionStatus(reservation, 'status', ['ACTIVE'], 'CANCELLED');
+  await transitionStatus(reservation, 'status', ['ACTIVE'], 'CANCELLED');
   await reservation.save();
   return reservation;
 }
@@ -136,7 +136,7 @@ async function requestBinding(bookId, reason) {
   ensure(book.status === 'AVAILABLE', 'Only an available book can be sent for binding.', 'BOOK_NOT_AVAILABLE');
 
   const bindingRequest = await BindingRequest.create({ book: bookId, reason });
-  transitionStatus(book, 'status', ['AVAILABLE'], 'IN_BINDING');
+  await transitionStatus(book, 'status', ['AVAILABLE'], 'IN_BINDING', 'UC-LIB-904');
   await book.save();
 
   return bindingRequest;
@@ -145,13 +145,13 @@ async function requestBinding(bookId, reason) {
 async function completeBinding(bindingRequestId) {
   const bindingRequest = await BindingRequest.findById(bindingRequestId);
   ensureExists(bindingRequest, 'Binding request');
-  transitionStatus(bindingRequest, 'status', ['REQUESTED', 'IN_PROGRESS'], 'COMPLETED');
+  await transitionStatus(bindingRequest, 'status', ['REQUESTED', 'IN_PROGRESS'], 'COMPLETED', 'UC-LIB-904');
   bindingRequest.completedAt = new Date();
   await bindingRequest.save();
 
   const book = await Book.findById(bindingRequest.book);
   ensureExists(book, 'Book');
-  transitionStatus(book, 'status', ['IN_BINDING'], 'AVAILABLE');
+  await transitionStatus(book, 'status', ['IN_BINDING'], 'AVAILABLE', 'UC-LIB-904');
   await book.save();
 
   return bindingRequest;
@@ -161,7 +161,7 @@ async function completeBinding(bindingRequestId) {
 async function payFine(fineId) {
   const fine = await Fine.findById(fineId);
   ensureExists(fine, 'Fine');
-  transitionStatus(fine, 'status', ['UNPAID'], 'PAID');
+  await transitionStatus(fine, 'status', ['UNPAID'], 'PAID', 'UC-LIB-905');
   await fine.save();
   return fine;
 }
@@ -169,7 +169,7 @@ async function payFine(fineId) {
 async function waiveFine(fineId) {
   const fine = await Fine.findById(fineId);
   ensureExists(fine, 'Fine');
-  transitionStatus(fine, 'status', ['UNPAID'], 'WAIVED');
+  await transitionStatus(fine, 'status', ['UNPAID'], 'WAIVED', 'UC-LIB-905');
   await fine.save();
   return fine;
 }

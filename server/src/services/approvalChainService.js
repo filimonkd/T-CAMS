@@ -12,6 +12,13 @@ const APPROVAL_CHAINS = {
   FINANCE: ['DRAFT', 'FINANCE_OFFICER_REVIEW', 'AUDITOR_REVIEW', 'BUREAU_REVIEW', 'APPROVED'],
 };
 
+// Maps (model, chain) to the useCases.js registry row for that variant, so
+// transitions get attributed to the right isoClause/regulatoryClause.
+const USE_CASE_CODES = {
+  MonthlyBudgetReport: { RPB: 'UC-ADMIN-RPB-001', FINANCE: 'UC-ADMIN-FIN-001' },
+  AnnualBudgetPlan: { RPB: 'UC-ADMIN-RPB-002', FINANCE: 'UC-ADMIN-FIN-002' },
+};
+
 // Advances a report/plan to the next stage of its own approval chain.
 async function advanceReport(Model, id) {
   const doc = await Model.findById(id);
@@ -30,7 +37,8 @@ async function advanceReport(Model, id) {
   );
 
   const nextStatus = chain[currentIndex + 1];
-  transitionStatus(doc, 'status', [doc.status], nextStatus);
+  const useCaseCode = (USE_CASE_CODES[Model.modelName] || {})[doc.approvalChain];
+  await transitionStatus(doc, 'status', [doc.status], nextStatus, useCaseCode);
   await doc.save();
   return doc;
 }
@@ -42,8 +50,9 @@ async function rejectReport(Model, id) {
 
   const chain = APPROVAL_CHAINS[doc.approvalChain];
   const reviewStages = chain.slice(1, -1);
+  const useCaseCode = (USE_CASE_CODES[Model.modelName] || {})[doc.approvalChain];
 
-  transitionStatus(doc, 'status', reviewStages, 'REJECTED');
+  await transitionStatus(doc, 'status', reviewStages, 'REJECTED', useCaseCode);
   await doc.save();
   return doc;
 }
