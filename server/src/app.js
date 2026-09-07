@@ -8,7 +8,8 @@ const { requireAuth } = require('./middleware/authMiddleware');
 
 const app = express();
 
-app.use(cors());
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+app.use(cors({ origin: CLIENT_URL }));
 app.use(express.json());
 app.use(morgan('dev'));
 
