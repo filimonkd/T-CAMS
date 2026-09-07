@@ -29,7 +29,7 @@ async function countPendingClearances(employeeName) {
 async function approveRecruitmentRequisition(requisitionId) {
   const requisition = await RecruitmentRequisition.findById(requisitionId);
   ensureExists(requisition, 'Recruitment requisition');
-  transitionStatus(requisition, 'status', ['REQUESTED'], 'APPROVED');
+  await transitionStatus(requisition, 'status', ['REQUESTED'], 'APPROVED', 'UC-ADMIN-HR-001');
   await requisition.save();
   return requisition;
 }
@@ -37,7 +37,7 @@ async function approveRecruitmentRequisition(requisitionId) {
 async function closeRecruitmentRequisition(requisitionId) {
   const requisition = await RecruitmentRequisition.findById(requisitionId);
   ensureExists(requisition, 'Recruitment requisition');
-  transitionStatus(requisition, 'status', ['APPROVED'], 'CLOSED');
+  await transitionStatus(requisition, 'status', ['APPROVED'], 'CLOSED', 'UC-ADMIN-HR-001');
   await requisition.save();
   return requisition;
 }
@@ -45,7 +45,7 @@ async function closeRecruitmentRequisition(requisitionId) {
 async function rejectRecruitmentRequisition(requisitionId) {
   const requisition = await RecruitmentRequisition.findById(requisitionId);
   ensureExists(requisition, 'Recruitment requisition');
-  transitionStatus(requisition, 'status', ['REQUESTED'], 'REJECTED');
+  await transitionStatus(requisition, 'status', ['REQUESTED'], 'REJECTED', 'UC-ADMIN-HR-001');
   await requisition.save();
   return requisition;
 }
@@ -55,7 +55,7 @@ async function rejectRecruitmentRequisition(requisitionId) {
 async function shortlistJobApplication(applicationId) {
   const application = await JobApplication.findById(applicationId);
   ensureExists(application, 'Job application');
-  transitionStatus(application, 'status', ['SUBMITTED'], 'SHORTLISTED');
+  await transitionStatus(application, 'status', ['SUBMITTED'], 'SHORTLISTED', 'UC-ADMIN-HR-002');
   await application.save();
   return application;
 }
@@ -63,7 +63,7 @@ async function shortlistJobApplication(applicationId) {
 async function rejectJobApplication(applicationId) {
   const application = await JobApplication.findById(applicationId);
   ensureExists(application, 'Job application');
-  transitionStatus(application, 'status', ['SUBMITTED', 'SHORTLISTED'], 'REJECTED');
+  await transitionStatus(application, 'status', ['SUBMITTED', 'SHORTLISTED'], 'REJECTED', 'UC-ADMIN-HR-002');
   await application.save();
   return application;
 }
@@ -71,7 +71,7 @@ async function rejectJobApplication(applicationId) {
 async function hireJobApplication(applicationId) {
   const application = await JobApplication.findById(applicationId);
   ensureExists(application, 'Job application');
-  transitionStatus(application, 'status', ['SHORTLISTED'], 'HIRED');
+  await transitionStatus(application, 'status', ['SHORTLISTED'], 'HIRED', 'UC-ADMIN-HR-002');
   await application.save();
   return application;
 }
@@ -81,7 +81,7 @@ async function hireJobApplication(applicationId) {
 async function signEmploymentContract(contractId) {
   const contract = await EmploymentContract.findById(contractId);
   ensureExists(contract, 'Employment contract');
-  transitionStatus(contract, 'status', ['DRAFT'], 'SIGNED');
+  await transitionStatus(contract, 'status', ['DRAFT'], 'SIGNED', 'UC-ADMIN-HR-003');
   await contract.save();
   return contract;
 }
@@ -89,7 +89,7 @@ async function signEmploymentContract(contractId) {
 async function activateEmploymentContract(contractId) {
   const contract = await EmploymentContract.findById(contractId);
   ensureExists(contract, 'Employment contract');
-  transitionStatus(contract, 'status', ['SIGNED'], 'ACTIVE');
+  await transitionStatus(contract, 'status', ['SIGNED'], 'ACTIVE', 'UC-ADMIN-HR-003');
   await contract.save();
   return contract;
 }
@@ -97,7 +97,7 @@ async function activateEmploymentContract(contractId) {
 async function terminateEmploymentContract(contractId) {
   const contract = await EmploymentContract.findById(contractId);
   ensureExists(contract, 'Employment contract');
-  transitionStatus(contract, 'status', ['ACTIVE'], 'TERMINATED');
+  await transitionStatus(contract, 'status', ['ACTIVE'], 'TERMINATED', 'UC-ADMIN-HR-003');
   await contract.save();
   return contract;
 }
@@ -122,7 +122,7 @@ async function approveLeaveRequest(requestId) {
   const leaveBalance = await LeaveBalance.findById(request.leaveBalance);
   assertLeaveBalance(leaveBalance, request.requestedDays);
 
-  transitionStatus(request, 'status', ['SUBMITTED'], 'APPROVED');
+  await transitionStatus(request, 'status', ['SUBMITTED'], 'APPROVED', 'UC-ADMIN-HR-004');
   await request.save();
 
   leaveBalance.usedDays += request.requestedDays;
@@ -134,7 +134,7 @@ async function approveLeaveRequest(requestId) {
 async function rejectLeaveRequest(requestId) {
   const request = await LeaveRequest.findById(requestId);
   ensureExists(request, 'Leave request');
-  transitionStatus(request, 'status', ['SUBMITTED'], 'REJECTED');
+  await transitionStatus(request, 'status', ['SUBMITTED'], 'REJECTED', 'UC-ADMIN-HR-004');
   await request.save();
   return request;
 }
@@ -144,7 +144,7 @@ async function rejectLeaveRequest(requestId) {
 async function clearMedicalClearance(clearanceId) {
   const clearance = await MedicalClearance.findById(clearanceId);
   ensureExists(clearance, 'Medical clearance');
-  transitionStatus(clearance, 'status', ['PENDING'], 'CLEARED');
+  await transitionStatus(clearance, 'status', ['PENDING'], 'CLEARED', 'UC-ADMIN-HR-005');
   await clearance.save();
   return clearance;
 }
@@ -152,7 +152,7 @@ async function clearMedicalClearance(clearanceId) {
 async function rejectMedicalClearance(clearanceId) {
   const clearance = await MedicalClearance.findById(clearanceId);
   ensureExists(clearance, 'Medical clearance');
-  transitionStatus(clearance, 'status', ['PENDING'], 'REJECTED');
+  await transitionStatus(clearance, 'status', ['PENDING'], 'REJECTED', 'UC-ADMIN-HR-005');
   await clearance.save();
   return clearance;
 }
@@ -162,7 +162,7 @@ async function rejectMedicalClearance(clearanceId) {
 async function clearPropertyClearance(clearanceId) {
   const clearance = await PropertyClearance.findById(clearanceId);
   ensureExists(clearance, 'Property clearance');
-  transitionStatus(clearance, 'status', ['PENDING'], 'CLEARED');
+  await transitionStatus(clearance, 'status', ['PENDING'], 'CLEARED', 'UC-ADMIN-HR-006');
   await clearance.save();
   return clearance;
 }
@@ -170,7 +170,7 @@ async function clearPropertyClearance(clearanceId) {
 async function rejectPropertyClearance(clearanceId) {
   const clearance = await PropertyClearance.findById(clearanceId);
   ensureExists(clearance, 'Property clearance');
-  transitionStatus(clearance, 'status', ['PENDING'], 'REJECTED');
+  await transitionStatus(clearance, 'status', ['PENDING'], 'REJECTED', 'UC-ADMIN-HR-006');
   await clearance.save();
   return clearance;
 }
@@ -191,7 +191,7 @@ async function enrollInTraining(employeeName, trainingScheduleId) {
 async function completeTrainingEnrollment(enrollmentId) {
   const enrollment = await TrainingEnrollment.findById(enrollmentId);
   ensureExists(enrollment, 'Training enrollment');
-  transitionStatus(enrollment, 'status', ['ENROLLED'], 'COMPLETED');
+  await transitionStatus(enrollment, 'status', ['ENROLLED'], 'COMPLETED', 'UC-ADMIN-HR-007');
   await enrollment.save();
   return enrollment;
 }
@@ -199,7 +199,7 @@ async function completeTrainingEnrollment(enrollmentId) {
 async function cancelTrainingEnrollment(enrollmentId) {
   const enrollment = await TrainingEnrollment.findById(enrollmentId);
   ensureExists(enrollment, 'Training enrollment');
-  transitionStatus(enrollment, 'status', ['ENROLLED'], 'CANCELLED');
+  await transitionStatus(enrollment, 'status', ['ENROLLED'], 'CANCELLED', 'UC-ADMIN-HR-007');
   await enrollment.save();
   return enrollment;
 }
@@ -217,7 +217,7 @@ async function enrollBiometric(employeeName, biometricHash) {
 async function revokeBiometricEnrollment(enrollmentId) {
   const enrollment = await BiometricEnrollment.findById(enrollmentId);
   ensureExists(enrollment, 'Biometric enrollment');
-  transitionStatus(enrollment, 'status', ['ACTIVE'], 'REVOKED');
+  await transitionStatus(enrollment, 'status', ['ACTIVE'], 'REVOKED', 'UC-ADMIN-HR-008');
   await enrollment.save();
   return enrollment;
 }
