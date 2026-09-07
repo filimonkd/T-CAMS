@@ -43,5 +43,13 @@ router.use('/finance/purchase-orders', require('./finance/purchaseOrderRoutes'))
 router.use('/finance/expense-claims', require('./finance/expenseClaimRoutes'));
 router.use('/finance/petty-cash-funds', require('./finance/pettyCashFundRoutes'));
 router.use('/finance/petty-cash-transactions', require('./finance/pettyCashTransactionRoutes'));
+router.use('/hr/recruitment-requisitions', require('./hr/recruitmentRequisitionRoutes'));
+router.use('/hr/job-applications', require('./hr/jobApplicationRoutes'));
+router.use('/hr/employment-contracts', require('./hr/employmentContractRoutes'));
+router.use('/hr/leave-requests', require('./hr/leaveRequestRoutes'));
+router.use('/hr/medical-clearances', require('./hr/medicalClearanceRoutes'));
+router.use('/hr/property-clearances', require('./hr/propertyClearanceRoutes'));
+router.use('/hr/training-enrollments', require('./hr/trainingEnrollmentRoutes'));
+router.use('/hr/biometric-enrollments', require('./hr/biometricEnrollmentRoutes'));
 
 module.exports = router;
