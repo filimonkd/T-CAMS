@@ -7,6 +7,8 @@
  * expected to catch GuardError and translate it into an HTTP 4xx response.
  */
 
+const { recordAuditEntry } = require('./auditService');
+
 class GuardError extends Error {
   constructor(message, code = 'GUARD_BLOCKED', statusCode = 422) {
     super(message);
@@ -87,16 +89,34 @@ function ensureRoomAvailable(room) {
 }
 
 /**
- * Validates a status transition (see ensureStatusTransitionAllowed) and then
- * applies it to `doc[field]`. Callers must run any assert-/ensure- prefixed
- * blocking rules for the action BEFORE calling transitionStatus, since this only
- * checks that the transition itself is legal, not the business rules around
- * it (e.g. assertNoOverdueLoans must be checked before transitioning a Loan
- * to ACTIVE, not by this function).
+ * Validates a status transition (see ensureStatusTransitionAllowed), applies
+ * it to `doc[field]`, and records the transition in the AuditLog (this is
+ * the single choke point every module's transitions pass through, so it is
+ * also the single place audit entries are written from). Callers must run
+ * any assert-/ensure- prefixed blocking rules for the action BEFORE calling
+ * transitionStatus, since this only checks that the transition itself is
+ * legal, not the business rules around it (e.g. assertNoOverdueLoans must be
+ * checked before transitioning a Loan to ACTIVE, not by this function).
+ *
+ * `useCaseCode` is optional: pass the config/useCases.js code this action
+ * corresponds to (e.g. 'UC-LIB-902') so the audit entry carries its
+ * isoClause/regulatoryClause for compliance filtering. Omit it for an action
+ * with no exact matching registry row (e.g. a withdraw/cancel that isn't
+ * separately registered) - the entry is still recorded, just unattributed.
  */
-function transitionStatus(doc, field, allowedFromStatuses, targetStatus) {
-  ensureStatusTransitionAllowed(doc[field], allowedFromStatuses, targetStatus);
+async function transitionStatus(doc, field, allowedFromStatuses, targetStatus, useCaseCode) {
+  const fromStatus = doc[field];
+  ensureStatusTransitionAllowed(fromStatus, allowedFromStatuses, targetStatus);
   doc[field] = targetStatus;
+
+  await recordAuditEntry({
+    entityType: doc.constructor.modelName,
+    entityId: doc._id,
+    fromStatus,
+    toStatus: targetStatus,
+    useCaseCode,
+  });
+
   return doc;
 }
 
