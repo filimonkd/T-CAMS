@@ -4,6 +4,7 @@ const morgan = require('morgan');
 
 const routes = require('./routes');
 const { useCases, COMPLIANCE_STATUS } = require('./config/useCases');
+const { requireAuth } = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -19,9 +20,13 @@ app.get('/api/use-cases', (req, res) => {
   res.json({ complianceStatus: COMPLIANCE_STATUS, count: useCases.length, useCases });
 });
 
-app.use('/api', routes);
-app.use('/api/audit', require('./routes/auditRoutes'));
-app.use('/api/reports', require('./routes/reportRoutes'));
+// Mounted before the requireAuth-guarded routes below so logging in doesn't
+// itself require a token.
+app.use('/api/auth', require('./routes/authRoutes'));
+
+app.use('/api', requireAuth, routes);
+app.use('/api/audit', requireAuth, require('./routes/auditRoutes'));
+app.use('/api/reports', requireAuth, require('./routes/reportRoutes'));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
