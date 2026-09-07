@@ -1,6 +1,6 @@
 const Section = require('../../models/supporting/Section');
 const { createCrudController, handleGuardError } = require('../crudControllerFactory');
-const { ensure, ensureExists, ensureStatusTransitionAllowed } = require('../../services/guardService');
+const { ensure, ensureExists, transitionStatus } = require('../../services/guardService');
 
 const controller = createCrudController(Section);
 
@@ -29,9 +29,8 @@ controller.close = async function close(req, res, next) {
   try {
     const section = await Section.findById(req.params.id);
     ensureExists(section, 'Section');
-    ensureStatusTransitionAllowed(section.status, ['OPEN'], 'CLOSED');
+    await transitionStatus(section, 'status', ['OPEN'], 'CLOSED', 'ACAD-008');
 
-    section.status = 'CLOSED';
     await section.save();
     res.json(section);
   } catch (err) {

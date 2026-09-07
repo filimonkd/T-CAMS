@@ -5,7 +5,7 @@ const {
   ensure,
   ensureExists,
   ensureCapacityAvailable,
-  ensureStatusTransitionAllowed,
+  transitionStatus,
 } = require('./guardService');
 
 /**
@@ -39,12 +39,11 @@ async function enrollLearner(learnerId, sectionId) {
 async function withdrawEnrollment(enrollmentId) {
   const enrollment = await Enrollment.findById(enrollmentId);
   ensureExists(enrollment, 'Enrollment');
-  ensureStatusTransitionAllowed(enrollment.status, ['ENROLLED'], 'WITHDRAWN');
+  await transitionStatus(enrollment, 'status', ['ENROLLED'], 'WITHDRAWN');
 
   const section = await Section.findById(enrollment.section);
   ensureExists(section, 'Section');
 
-  enrollment.status = 'WITHDRAWN';
   enrollment.withdrawnAt = new Date();
   await enrollment.save();
 
