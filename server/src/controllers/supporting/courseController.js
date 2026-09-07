@@ -1,6 +1,6 @@
 const Course = require('../../models/supporting/Course');
 const { createCrudController, handleGuardError } = require('../crudControllerFactory');
-const { ensureExists, ensureStatusTransitionAllowed } = require('../../services/guardService');
+const { ensureExists, transitionStatus } = require('../../services/guardService');
 
 const controller = createCrudController(Course);
 
@@ -9,9 +9,8 @@ controller.retire = async function retire(req, res, next) {
   try {
     const course = await Course.findById(req.params.id);
     ensureExists(course, 'Course');
-    ensureStatusTransitionAllowed(course.status, ['ACTIVE'], 'RETIRED');
+    await transitionStatus(course, 'status', ['ACTIVE'], 'RETIRED', 'ACAD-004');
 
-    course.status = 'RETIRED';
     await course.save();
     res.json(course);
   } catch (err) {

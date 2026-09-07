@@ -8,7 +8,7 @@ const { ensureExists, transitionStatus, assertBudgetAvailable } = require('./gua
 async function closeBudgetRequestCycle(cycleId) {
   const cycle = await BudgetRequestCycle.findById(cycleId);
   ensureExists(cycle, 'Budget request cycle');
-  transitionStatus(cycle, 'status', ['OPEN'], 'CLOSED');
+  await transitionStatus(cycle, 'status', ['OPEN'], 'CLOSED', 'UC-ADMIN-RPB-003');
   cycle.closeDate = new Date();
   await cycle.save();
   return cycle;
@@ -35,7 +35,7 @@ async function approveDepartmentBudgetRequest(requestId) {
   const budgetAllocation = await BudgetAllocation.findById(request.budgetAllocation);
   assertBudgetAvailable(budgetAllocation, request.requestedAmount);
 
-  transitionStatus(request, 'status', ['SUBMITTED'], 'APPROVED');
+  await transitionStatus(request, 'status', ['SUBMITTED'], 'APPROVED', 'UC-ADMIN-RPB-004');
   await request.save();
 
   budgetAllocation.spentAmount += request.requestedAmount;
@@ -47,7 +47,7 @@ async function approveDepartmentBudgetRequest(requestId) {
 async function rejectDepartmentBudgetRequest(requestId) {
   const request = await DepartmentBudgetRequest.findById(requestId);
   ensureExists(request, 'Department budget request');
-  transitionStatus(request, 'status', ['SUBMITTED'], 'REJECTED');
+  await transitionStatus(request, 'status', ['SUBMITTED'], 'REJECTED', 'UC-ADMIN-RPB-004');
   await request.save();
   return request;
 }
@@ -63,7 +63,7 @@ async function createBureauSubmission(cycleId) {
 async function submitBureauSubmission(submissionId) {
   const submission = await BureauSubmission.findById(submissionId);
   ensureExists(submission, 'Bureau submission');
-  transitionStatus(submission, 'status', ['DRAFT'], 'SUBMITTED');
+  await transitionStatus(submission, 'status', ['DRAFT'], 'SUBMITTED', 'UC-ADMIN-RPB-005');
   await submission.save();
   return submission;
 }
@@ -71,7 +71,7 @@ async function submitBureauSubmission(submissionId) {
 async function acknowledgeBureauSubmission(submissionId) {
   const submission = await BureauSubmission.findById(submissionId);
   ensureExists(submission, 'Bureau submission');
-  transitionStatus(submission, 'status', ['SUBMITTED'], 'ACKNOWLEDGED');
+  await transitionStatus(submission, 'status', ['SUBMITTED'], 'ACKNOWLEDGED', 'UC-ADMIN-RPB-005');
   await submission.save();
   return submission;
 }

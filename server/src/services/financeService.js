@@ -20,7 +20,7 @@ async function submitBid(vendorId, description, amount) {
   return Bid.create({ vendor: vendorId, description, amount });
 }
 
-// UC-ADMIN-FIN-003/004: Create Bid Evaluation (blocked on an unapproved vendor).
+// UC-ADMIN-FIN-003: Create Bid Evaluation (blocked on an unapproved vendor).
 async function createBidEvaluation(bidId, score, evaluatorNotes) {
   const bid = await Bid.findById(bidId);
   ensureExists(bid, 'Bid');
@@ -30,7 +30,7 @@ async function createBidEvaluation(bidId, score, evaluatorNotes) {
 
   const evaluation = await BidEvaluation.create({ bid: bidId, score, evaluatorNotes });
 
-  transitionStatus(bid, 'status', ['SUBMITTED'], 'EVALUATED');
+  await transitionStatus(bid, 'status', ['SUBMITTED'], 'EVALUATED', 'UC-ADMIN-FIN-003');
   await bid.save();
 
   return evaluation;
@@ -48,10 +48,10 @@ async function finalizeBidEvaluation(evaluationId) {
   assertVendorApproved(vendor);
   assertBidScoreThreshold(evaluation.score);
 
-  transitionStatus(evaluation, 'status', ['PENDING'], 'FINALIZED');
+  await transitionStatus(evaluation, 'status', ['PENDING'], 'FINALIZED', 'UC-ADMIN-FIN-003');
   await evaluation.save();
 
-  transitionStatus(bid, 'status', ['EVALUATED'], 'AWARDED');
+  await transitionStatus(bid, 'status', ['EVALUATED'], 'AWARDED', 'UC-ADMIN-FIN-003');
   await bid.save();
 
   return evaluation;
@@ -60,18 +60,18 @@ async function finalizeBidEvaluation(evaluationId) {
 async function rejectBidEvaluation(evaluationId) {
   const evaluation = await BidEvaluation.findById(evaluationId);
   ensureExists(evaluation, 'Bid evaluation');
-  transitionStatus(evaluation, 'status', ['PENDING'], 'REJECTED');
+  await transitionStatus(evaluation, 'status', ['PENDING'], 'REJECTED', 'UC-ADMIN-FIN-003');
   await evaluation.save();
 
   const bid = await Bid.findById(evaluation.bid);
   ensureExists(bid, 'Bid');
-  transitionStatus(bid, 'status', ['EVALUATED'], 'REJECTED');
+  await transitionStatus(bid, 'status', ['EVALUATED'], 'REJECTED', 'UC-ADMIN-FIN-003');
   await bid.save();
 
   return evaluation;
 }
 
-// UC-ADMIN-FIN-005: Issue Purchase Order (blocked on an unapproved vendor).
+// UC-ADMIN-FIN-004: Issue Purchase Order (blocked on an unapproved vendor).
 async function issuePurchaseOrder(vendorId, bidId, budgetAllocationId, amount) {
   const vendor = await Vendor.findById(vendorId);
   assertVendorApproved(vendor);
@@ -83,7 +83,7 @@ async function issuePurchaseOrder(vendorId, bidId, budgetAllocationId, amount) {
     amount,
   });
 
-  transitionStatus(order, 'status', ['DRAFT'], 'ISSUED');
+  await transitionStatus(order, 'status', ['DRAFT'], 'ISSUED', 'UC-ADMIN-FIN-004');
   await order.save();
 
   return order;
@@ -92,7 +92,7 @@ async function issuePurchaseOrder(vendorId, bidId, budgetAllocationId, amount) {
 async function fulfillPurchaseOrder(orderId) {
   const order = await PurchaseOrder.findById(orderId);
   ensureExists(order, 'Purchase order');
-  transitionStatus(order, 'status', ['ISSUED'], 'FULFILLED');
+  await transitionStatus(order, 'status', ['ISSUED'], 'FULFILLED', 'UC-ADMIN-FIN-004');
   await order.save();
   return order;
 }
@@ -100,12 +100,12 @@ async function fulfillPurchaseOrder(orderId) {
 async function cancelPurchaseOrder(orderId) {
   const order = await PurchaseOrder.findById(orderId);
   ensureExists(order, 'Purchase order');
-  transitionStatus(order, 'status', ['DRAFT', 'ISSUED'], 'CANCELLED');
+  await transitionStatus(order, 'status', ['DRAFT', 'ISSUED'], 'CANCELLED', 'UC-ADMIN-FIN-004');
   await order.save();
   return order;
 }
 
-// UC-ADMIN-FIN-006: Submit Expense Claim (blocked on budget or a too-short justification).
+// UC-ADMIN-FIN-005: Submit Expense Claim (blocked on budget or a too-short justification).
 async function submitExpenseClaim(claimantName, budgetAllocationId, requestedAmount, justification) {
   assertExpenseJustification(justification);
 
@@ -127,7 +127,7 @@ async function approveExpenseClaim(claimId) {
   const budgetAllocation = await BudgetAllocation.findById(claim.budgetAllocation);
   assertBudgetAvailable(budgetAllocation, claim.requestedAmount);
 
-  transitionStatus(claim, 'status', ['SUBMITTED'], 'APPROVED');
+  await transitionStatus(claim, 'status', ['SUBMITTED'], 'APPROVED', 'UC-ADMIN-FIN-005');
   await claim.save();
 
   budgetAllocation.spentAmount += claim.requestedAmount;
@@ -139,12 +139,12 @@ async function approveExpenseClaim(claimId) {
 async function rejectExpenseClaim(claimId) {
   const claim = await ExpenseClaim.findById(claimId);
   ensureExists(claim, 'Expense claim');
-  transitionStatus(claim, 'status', ['SUBMITTED'], 'REJECTED');
+  await transitionStatus(claim, 'status', ['SUBMITTED'], 'REJECTED', 'UC-ADMIN-FIN-005');
   await claim.save();
   return claim;
 }
 
-// UC-ADMIN-FIN-007: Record Petty Cash Transaction (blocked over the fund's current balance).
+// UC-ADMIN-FIN-006: Record Petty Cash Transaction (blocked over the fund's current balance).
 async function recordPettyCashTransaction(fundId, amount, purpose) {
   const fund = await PettyCashFund.findById(fundId);
   assertPettyCashLimit(fund, amount);
@@ -160,7 +160,7 @@ async function recordPettyCashTransaction(fundId, amount, purpose) {
 async function voidPettyCashTransaction(transactionId) {
   const transaction = await PettyCashTransaction.findById(transactionId);
   ensureExists(transaction, 'Petty cash transaction');
-  transitionStatus(transaction, 'status', ['RECORDED'], 'VOIDED');
+  await transitionStatus(transaction, 'status', ['RECORDED'], 'VOIDED', 'UC-ADMIN-FIN-006');
   await transaction.save();
 
   const fund = await PettyCashFund.findById(transaction.pettyCashFund);

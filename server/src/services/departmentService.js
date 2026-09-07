@@ -33,7 +33,7 @@ async function placeTrainee(learnerId, sectionId) {
 async function withdrawTraineePlacement(placementId) {
   const placement = await TraineePlacement.findById(placementId);
   ensureExists(placement, 'Trainee placement');
-  transitionStatus(placement, 'status', ['PLACED'], 'WITHDRAWN');
+  await transitionStatus(placement, 'status', ['PLACED'], 'WITHDRAWN');
   await placement.save();
 
   const section = await Section.findById(placement.section);
@@ -59,7 +59,7 @@ async function scheduleTraining(trainerId, sectionId, scheduledDate, hours) {
 async function cancelTrainingSchedule(scheduleId) {
   const schedule = await TrainingSchedule.findById(scheduleId);
   ensureExists(schedule, 'Training schedule');
-  transitionStatus(schedule, 'status', ['SCHEDULED'], 'CANCELLED');
+  await transitionStatus(schedule, 'status', ['SCHEDULED'], 'CANCELLED');
   await schedule.save();
 
   const trainer = await Trainer.findById(schedule.trainer);
@@ -97,7 +97,7 @@ async function approveMaterialRequest(requestId) {
   const budgetAllocation = await BudgetAllocation.findById(request.budgetAllocation);
   assertBudgetAvailable(budgetAllocation, request.estimatedCost);
 
-  transitionStatus(request, 'status', ['REQUESTED'], 'APPROVED');
+  await transitionStatus(request, 'status', ['REQUESTED'], 'APPROVED', 'UC-ADMIN-DEPT-003');
   await request.save();
 
   stockItem.quantityOnHand -= request.quantityRequested;
@@ -112,7 +112,7 @@ async function approveMaterialRequest(requestId) {
 async function rejectMaterialRequest(requestId) {
   const request = await MaterialRequest.findById(requestId);
   ensureExists(request, 'Material request');
-  transitionStatus(request, 'status', ['REQUESTED'], 'REJECTED');
+  await transitionStatus(request, 'status', ['REQUESTED'], 'REJECTED', 'UC-ADMIN-DEPT-003');
   await request.save();
   return request;
 }
@@ -140,7 +140,7 @@ async function approveMaintenanceRequisition(requisitionId) {
   const budgetAllocation = await BudgetAllocation.findById(requisition.budgetAllocation);
   assertBudgetAvailable(budgetAllocation, requisition.estimatedCost);
 
-  transitionStatus(requisition, 'status', ['REQUESTED'], 'APPROVED');
+  await transitionStatus(requisition, 'status', ['REQUESTED'], 'APPROVED', 'UC-ADMIN-DEPT-005');
   await requisition.save();
 
   budgetAllocation.spentAmount += requisition.estimatedCost;
@@ -148,7 +148,7 @@ async function approveMaintenanceRequisition(requisitionId) {
 
   const room = await Room.findById(requisition.room);
   ensureExists(room, 'Room');
-  transitionStatus(room, 'status', ['AVAILABLE'], 'MAINTENANCE');
+  await transitionStatus(room, 'status', ['AVAILABLE'], 'MAINTENANCE', 'UC-ADMIN-DEPT-005');
   await room.save();
 
   return requisition;
@@ -157,13 +157,13 @@ async function approveMaintenanceRequisition(requisitionId) {
 async function completeMaintenanceRequisition(requisitionId) {
   const requisition = await MaintenanceRequisition.findById(requisitionId);
   ensureExists(requisition, 'Maintenance requisition');
-  transitionStatus(requisition, 'status', ['APPROVED'], 'COMPLETED');
+  await transitionStatus(requisition, 'status', ['APPROVED'], 'COMPLETED', 'UC-ADMIN-DEPT-005');
   requisition.completedAt = new Date();
   await requisition.save();
 
   const room = await Room.findById(requisition.room);
   ensureExists(room, 'Room');
-  transitionStatus(room, 'status', ['MAINTENANCE'], 'AVAILABLE');
+  await transitionStatus(room, 'status', ['MAINTENANCE'], 'AVAILABLE', 'UC-ADMIN-DEPT-005');
   await room.save();
 
   return requisition;
@@ -180,7 +180,7 @@ async function assignExamRoom(sectionId, roomId, examDate, cohortSize) {
 async function cancelExamRoomAssignment(assignmentId) {
   const assignment = await ExamRoomAssignment.findById(assignmentId);
   ensureExists(assignment, 'Exam room assignment');
-  transitionStatus(assignment, 'status', ['ASSIGNED'], 'CANCELLED');
+  await transitionStatus(assignment, 'status', ['ASSIGNED'], 'CANCELLED');
   await assignment.save();
   return assignment;
 }
