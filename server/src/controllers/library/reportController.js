@@ -1,6 +1,6 @@
 const { getOverdueReport } = require('../../services/libraryService');
 
-// LIB-007: Overdue report - no dedicated collection, just a query over Loan.
+// UC-LIB-906: Overdue report - no dedicated collection, just a query over Loan.
 const controller = {
   async overdue(req, res, next) {
     try {

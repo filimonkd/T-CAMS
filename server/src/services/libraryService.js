@@ -27,14 +27,14 @@ async function countOverdueLoans(learnerId) {
   return Loan.countDocuments({ learner: learnerId, status: 'ACTIVE', dueAt: { $lt: now } });
 }
 
-// LIB-001: Add Book to Catalog (blocked on a duplicate catalogId).
+// UC-LIB-900: Add Book to Catalog (blocked on a duplicate catalogId).
 async function addBookToCatalog(bookData) {
   const existing = await Book.findOne({ catalogId: bookData.catalogId });
   assertDuplicateCatalogEntry(existing);
   return Book.create(bookData);
 }
 
-// LIB-003: Issue Loan (blocked by outstanding overdue loans or a damaged book).
+// UC-LIB-902: Issue Loan (blocked by outstanding overdue loans or a damaged book).
 async function issueLoan(bookId, learnerId, loanRequestId) {
   const book = await Book.findById(bookId);
   ensureExists(book, 'Book');
@@ -60,7 +60,7 @@ async function issueLoan(bookId, learnerId, loanRequestId) {
   return loan;
 }
 
-// LIB-002: Approve Loan Request -> issues the loan and marks the request fulfilled.
+// UC-LIB-901: Approve Loan Request -> issues the loan and marks the request fulfilled.
 async function approveLoanRequest(loanRequestId) {
   const loanRequest = await LoanRequest.findById(loanRequestId);
   ensureExists(loanRequest, 'Loan request');
@@ -74,7 +74,7 @@ async function approveLoanRequest(loanRequestId) {
   return loan;
 }
 
-// LIB-003 (UC-900-02-02): Return Loan. Auto-calculates a Fine when overdue.
+// UC-LIB-902 (UC-900-02-02): Return Loan. Auto-calculates a Fine when overdue.
 async function returnLoan(loanId) {
   const loan = await Loan.findById(loanId);
   ensureExists(loan, 'Loan');
@@ -101,7 +101,7 @@ async function returnLoan(loanId) {
   return { loan, fine };
 }
 
-// LIB-004: Reserve Book Slot (max 2-hour slot, blocked at 2 active reservations).
+// UC-LIB-903: Reserve Book Slot (max 2-hour slot, blocked at 2 active reservations).
 async function reserveBook(bookId, learnerId, slotStart, slotEnd) {
   ensure(slotEnd > slotStart, 'Reservation slot end must be after slot start.', 'INVALID_SLOT');
   const slotHours = (slotEnd.getTime() - slotStart.getTime()) / (1000 * 60 * 60);
@@ -129,7 +129,7 @@ async function cancelReservation(reservationId) {
   return reservation;
 }
 
-// LIB-005: Submit Binding Request. Book moves out of circulation while bound.
+// UC-LIB-904: Submit Binding Request. Book moves out of circulation while bound.
 async function requestBinding(bookId, reason) {
   const book = await Book.findById(bookId);
   ensureExists(book, 'Book');
@@ -157,7 +157,7 @@ async function completeBinding(bindingRequestId) {
   return bindingRequest;
 }
 
-// LIB-006: Fine payment/waiver.
+// UC-LIB-905: Fine payment/waiver.
 async function payFine(fineId) {
   const fine = await Fine.findById(fineId);
   ensureExists(fine, 'Fine');
@@ -174,7 +174,7 @@ async function waiveFine(fineId) {
   return fine;
 }
 
-// LIB-007: Overdue report - Loans still ACTIVE past their due date.
+// UC-LIB-906: Overdue report - Loans still ACTIVE past their due date.
 async function getOverdueReport() {
   const now = new Date();
   const overdueLoans = await Loan.find({ status: 'ACTIVE', dueAt: { $lt: now } })

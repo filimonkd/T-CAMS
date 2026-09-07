@@ -4,7 +4,7 @@ const { addBookToCatalog } = require('../../services/libraryService');
 
 const controller = createCrudController(Book);
 
-// LIB-001: Add Book to Catalog (blocked on a duplicate catalogId).
+// UC-LIB-900: Add Book to Catalog (blocked on a duplicate catalogId).
 controller.create = async function create(req, res, next) {
   try {
     const book = await addBookToCatalog(req.body);

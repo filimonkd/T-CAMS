@@ -24,7 +24,7 @@ const controller = {
     }
   },
 
-  // LIB-005: Submit Binding Request.
+  // UC-LIB-904: Submit Binding Request.
   async create(req, res, next) {
     try {
       const { bookId, reason } = req.body;

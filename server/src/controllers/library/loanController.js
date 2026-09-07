@@ -28,7 +28,7 @@ const controller = {
     }
   },
 
-  // LIB-003: Issue Loan.
+  // UC-LIB-902: Issue Loan.
   async create(req, res, next) {
     try {
       const { bookId, learnerId } = req.body;
@@ -39,7 +39,7 @@ const controller = {
     }
   },
 
-  // LIB-003 (UC-900-02-02): Return Loan, auto-calculating a Fine if overdue.
+  // UC-LIB-902 (UC-900-02-02): Return Loan, auto-calculating a Fine if overdue.
   async returnLoan(req, res, next) {
     try {
       const result = await returnLoan(req.params.id);

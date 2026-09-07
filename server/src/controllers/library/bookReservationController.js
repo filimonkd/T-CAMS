@@ -29,7 +29,7 @@ const controller = {
     }
   },
 
-  // LIB-004: Reserve Book Slot.
+  // UC-LIB-903: Reserve Book Slot.
   async create(req, res, next) {
     try {
       const { bookId, learnerId, slotStart, slotEnd } = req.body;
