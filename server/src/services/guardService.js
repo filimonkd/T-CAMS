@@ -86,6 +86,52 @@ function ensureRoomAvailable(room) {
   ensure(room.status === 'AVAILABLE', `Room is not available (status: ${room.status}).`, 'ROOM_UNAVAILABLE');
 }
 
+/**
+ * Validates a status transition (see ensureStatusTransitionAllowed) and then
+ * applies it to `doc[field]`. Callers must run any assert-/ensure- prefixed
+ * blocking rules for the action BEFORE calling transitionStatus, since this only
+ * checks that the transition itself is legal, not the business rules around
+ * it (e.g. assertNoOverdueLoans must be checked before transitioning a Loan
+ * to ACTIVE, not by this function).
+ */
+function transitionStatus(doc, field, allowedFromStatuses, targetStatus) {
+  ensureStatusTransitionAllowed(doc[field], allowedFromStatuses, targetStatus);
+  doc[field] = targetStatus;
+  return doc;
+}
+
+// --- Library module guards ---
+
+function assertNoOverdueLoans(overdueLoanCount, entityName = 'Learner') {
+  ensure(
+    overdueLoanCount === 0,
+    `${entityName} has ${overdueLoanCount} overdue loan(s) and cannot proceed until they are returned.`,
+    'OVERDUE_LOANS_OUTSTANDING',
+  );
+}
+
+function assertBookNotDamaged(book) {
+  ensureExists(book, 'Book');
+  const condition = book.bookCard && book.bookCard.condition;
+  ensure(
+    condition !== 'POOR' && condition !== 'DAMAGED',
+    `Book is not loanable (condition: ${condition}).`,
+    'BOOK_NOT_LOANABLE',
+  );
+}
+
+function assertReservationLimit(activeReservationCount, limit = 2) {
+  ensure(
+    activeReservationCount < limit,
+    `Learner already has ${activeReservationCount} active reservations (limit ${limit}).`,
+    'RESERVATION_LIMIT_REACHED',
+  );
+}
+
+function assertDuplicateCatalogEntry(existingBook) {
+  ensureUnique(existingBook, 'Book', 'catalogId');
+}
+
 module.exports = {
   GuardError,
   ensure,
@@ -98,4 +144,9 @@ module.exports = {
   ensureSufficientLeaveBalance,
   ensureAssetAvailable,
   ensureRoomAvailable,
+  transitionStatus,
+  assertNoOverdueLoans,
+  assertBookNotDamaged,
+  assertReservationLimit,
+  assertDuplicateCatalogEntry,
 };

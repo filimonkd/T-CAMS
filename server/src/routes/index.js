@@ -14,5 +14,12 @@ router.use('/fee-accounts', require('./supporting/feeAccountRoutes'));
 router.use('/rooms', require('./supporting/roomRoutes'));
 router.use('/learners', require('./registrar/learnerRoutes'));
 router.use('/enrollments', require('./registrar/enrollmentRoutes'));
+router.use('/library/books', require('./library/bookRoutes'));
+router.use('/library/loan-requests', require('./library/loanRequestRoutes'));
+router.use('/library/loans', require('./library/loanRoutes'));
+router.use('/library/reservations', require('./library/bookReservationRoutes'));
+router.use('/library/binding-requests', require('./library/bindingRequestRoutes'));
+router.use('/library/fines', require('./library/fineRoutes'));
+router.use('/library/reports', require('./library/reportRoutes'));
 
 module.exports = router;

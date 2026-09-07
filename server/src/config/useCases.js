@@ -27,6 +27,7 @@ const MODULES = {
   FINANCE: 'FINANCE',
   FACILITIES: 'FACILITIES',
   QMS: 'QMS',
+  LIBRARY: 'LIBRARY',
 };
 
 const COMPLIANCE_STATUS = 'DRAFT_PLACEHOLDER';
@@ -88,6 +89,15 @@ const useCases = [
   { code: 'QMS-006', name: 'Perform Risk Assessment', module: MODULES.QMS, description: 'Assess risks and opportunities for a process, program, or project.', isoClause: '6.1.1', regulatoryClause: 'INST-POL-QMS §4.1 (placeholder)', guardRules: [] },
   { code: 'QMS-007', name: 'Control/Approve New Document Version', module: MODULES.QMS, description: 'Review and approve a new version of a controlled document.', isoClause: '7.5.2', regulatoryClause: 'INST-POL-QMS §5.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
   { code: 'QMS-008', name: 'Log Stakeholder Complaint', module: MODULES.QMS, description: 'Record a complaint raised by a learner, staff member, or vendor.', isoClause: '9.1.2', regulatoryClause: 'INST-POL-QMS §6.1 (placeholder)', guardRules: [] },
+
+  // --- Library (Book, LoanRequest, Loan, BookReservation, BindingRequest, Fine) ---
+  { code: 'UC-LIB-900', name: 'Add Book to Catalog', module: MODULES.LIBRARY, description: 'Register a new book, blocked if its catalog ID already exists.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-LIB §1.1 (placeholder)', guardRules: ['assertDuplicateCatalogEntry'] },
+  { code: 'UC-LIB-901', name: 'Submit/Approve Loan Request', module: MODULES.LIBRARY, description: 'Learner requests a book on loan; approval issues the loan.', isoClause: '8.2.1', regulatoryClause: 'INST-POL-LIB §2.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-LIB-902', name: 'Issue and Return Loan', module: MODULES.LIBRARY, description: 'Issue a book on loan; return closes the loan and auto-calculates an overdue fine (return workflow corresponds to external ref UC-900-02-02).', isoClause: '8.5.1', regulatoryClause: 'INST-POL-LIB §2.2 (placeholder)', guardRules: ['assertNoOverdueLoans', 'assertBookNotDamaged'] },
+  { code: 'UC-LIB-903', name: 'Reserve Book Slot', module: MODULES.LIBRARY, description: 'Reserve a book for a slot of at most 2 hours, blocked past 2 active reservations.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-LIB §3.1 (placeholder)', guardRules: ['assertReservationLimit'] },
+  { code: 'UC-LIB-904', name: 'Submit Binding Request', module: MODULES.LIBRARY, description: 'Send a book for binding/repair, taking it out of circulation until complete.', isoClause: '8.5.4', regulatoryClause: 'INST-POL-LIB §4.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-LIB-905', name: 'Record Overdue Fine Payment/Waiver', module: MODULES.LIBRARY, description: 'Settle or waive a fine auto-calculated from an overdue return.', isoClause: '8.2.1', regulatoryClause: 'INST-POL-LIB §5.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-LIB-906', name: 'Generate Overdue Loan Report', module: MODULES.LIBRARY, description: 'Query active loans past their due date, with computed days overdue.', isoClause: '9.1.3', regulatoryClause: 'INST-POL-LIB §6.1 (placeholder)', guardRules: [] },
 ];
 
 module.exports = { MODULES, COMPLIANCE_STATUS, useCases };
