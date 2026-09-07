@@ -20,6 +20,8 @@ app.get('/api/use-cases', (req, res) => {
 });
 
 app.use('/api', routes);
+app.use('/api/audit', require('./routes/auditRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
