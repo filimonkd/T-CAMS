@@ -162,7 +162,7 @@ function assertStockAvailability(stockItem, quantityRequested) {
   );
 }
 
-function assertBudgetAvailability(allocation, amount) {
+function assertBudgetAvailable(allocation, amount) {
   ensureExists(allocation, 'Budget allocation');
   const remaining = allocation.allocatedAmount - allocation.spentAmount;
   ensure(
@@ -178,6 +178,42 @@ function assertRoomCapacity(room, cohortSize) {
     cohortSize <= room.capacity,
     `Exam cohort of ${cohortSize} exceeds room capacity (${room.capacity}).`,
     'ROOM_CAPACITY_EXCEEDED',
+  );
+}
+
+// --- Budget & Finance module guards ---
+
+function assertVendorApproved(vendor) {
+  ensureExists(vendor, 'Vendor');
+  // Reuses the existing Vendor.status field from Phase 2 (APPROVED is one of
+  // its enum values) rather than adding a separate `approved` boolean that
+  // could drift out of sync with it.
+  ensure(vendor.status === 'APPROVED', `Vendor is not approved (status: ${vendor.status}).`, 'VENDOR_NOT_APPROVED');
+}
+
+function assertBidScoreThreshold(score, threshold = 70) {
+  ensure(
+    score >= threshold,
+    `Bid score ${score} is below the minimum threshold of ${threshold}.`,
+    'BID_SCORE_BELOW_THRESHOLD',
+  );
+}
+
+function assertPettyCashLimit(fund, amount) {
+  ensureExists(fund, 'Petty cash fund');
+  ensure(fund.isActive, 'Petty cash fund is not active.', 'PETTY_CASH_FUND_INACTIVE');
+  ensure(
+    amount <= fund.currentBalance,
+    `Petty cash transaction of ${amount} exceeds fund balance of ${fund.currentBalance}.`,
+    'PETTY_CASH_LIMIT_EXCEEDED',
+  );
+}
+
+function assertExpenseJustification(justification) {
+  ensure(
+    typeof justification === 'string' && justification.trim().length >= 50,
+    'Expense justification must be at least 50 characters.',
+    'EXPENSE_JUSTIFICATION_TOO_SHORT',
   );
 }
 
@@ -201,6 +237,10 @@ module.exports = {
   assertSectionCapacity,
   assertTrainerLoad,
   assertStockAvailability,
-  assertBudgetAvailability,
+  assertBudgetAvailable,
   assertRoomCapacity,
+  assertVendorApproved,
+  assertBidScoreThreshold,
+  assertPettyCashLimit,
+  assertExpenseJustification,
 };
