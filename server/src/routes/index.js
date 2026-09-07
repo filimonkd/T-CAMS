@@ -29,5 +29,19 @@ router.use('/department/course-outlines', require('./department/courseOutlineRou
 router.use('/department/maintenance-requisitions', require('./department/maintenanceRequisitionRoutes'));
 router.use('/department/attendance-records', require('./department/attendanceRecordRoutes'));
 router.use('/department/exam-room-assignments', require('./department/examRoomAssignmentRoutes'));
+router.use('/budget/monthly-budget-reports', require('./budget/monthlyBudgetReportRoutes'));
+router.use('/budget/annual-budget-plans', require('./budget/annualBudgetPlanRoutes'));
+router.use('/budget/request-cycles', require('./budget/budgetRequestCycleRoutes'));
+router.use('/budget/department-requests', require('./budget/departmentBudgetRequestRoutes'));
+router.use('/budget/bureau-submissions', require('./budget/bureauSubmissionRoutes'));
+router.use('/budget/utilization-entries', require('./budget/budgetUtilizationEntryRoutes'));
+router.use('/finance/monthly-budget-reports', require('./finance/monthlyBudgetReportRoutes'));
+router.use('/finance/annual-budget-plans', require('./finance/annualBudgetPlanRoutes'));
+router.use('/finance/bids', require('./finance/bidRoutes'));
+router.use('/finance/bid-evaluations', require('./finance/bidEvaluationRoutes'));
+router.use('/finance/purchase-orders', require('./finance/purchaseOrderRoutes'));
+router.use('/finance/expense-claims', require('./finance/expenseClaimRoutes'));
+router.use('/finance/petty-cash-funds', require('./finance/pettyCashFundRoutes'));
+router.use('/finance/petty-cash-transactions', require('./finance/pettyCashTransactionRoutes'));
 
 module.exports = router;
