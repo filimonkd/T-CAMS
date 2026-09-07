@@ -1,6 +1,6 @@
 const LeaveBalance = require('../../models/supporting/LeaveBalance');
 const { createCrudController, handleGuardError } = require('../crudControllerFactory');
-const { ensureExists, ensureSufficientLeaveBalance, ensureStatusTransitionAllowed } = require('../../services/guardService');
+const { ensureExists, assertLeaveBalance, ensureStatusTransitionAllowed } = require('../../services/guardService');
 
 const controller = createCrudController(LeaveBalance);
 
@@ -11,7 +11,7 @@ controller.approve = async function approve(req, res, next) {
     const leaveBalance = await LeaveBalance.findById(req.params.id);
     ensureExists(leaveBalance, 'Leave balance');
     ensureStatusTransitionAllowed(leaveBalance.status, ['ACTIVE'], 'ACTIVE');
-    ensureSufficientLeaveBalance(leaveBalance, days);
+    assertLeaveBalance(leaveBalance, days);
 
     leaveBalance.usedDays += days;
     await leaveBalance.save();
