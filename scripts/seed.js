@@ -11,6 +11,10 @@ const Vendor = require('../server/src/models/supporting/Vendor');
 const Program = require('../server/src/models/supporting/Program');
 const Course = require('../server/src/models/supporting/Course');
 const Room = require('../server/src/models/supporting/Room');
+const Section = require('../server/src/models/supporting/Section');
+const Learner = require('../server/src/models/registrar/Learner');
+const Enrollment = require('../server/src/models/registrar/Enrollment');
+const { enrollLearner } = require('../server/src/services/registrarService');
 
 const ROLES = [
   { name: 'ADMIN', description: 'Full system access', permissions: ['*'] },
@@ -60,10 +64,40 @@ async function seedSupportingData() {
   console.log('Seeded initial supporting data (vendor, program, course, room).');
 }
 
+async function seedRegistrarData() {
+  const course = await Course.findOne({ title: 'Orientation' });
+  if (!course) {
+    console.log('Skipping registrar seed: Orientation course not found.');
+    return;
+  }
+
+  let section = await Section.findOne({ course: course._id, term: '2026-T1' });
+  if (!section) {
+    section = await Section.create({ course: course._id, term: '2026-T1', capacity: 25 });
+  }
+
+  let learner = await Learner.findOne({ email: 'sample.learner@example.com' });
+  if (!learner) {
+    learner = await Learner.create({
+      firstName: 'Sample',
+      lastName: 'Learner',
+      email: 'sample.learner@example.com',
+    });
+  }
+
+  const alreadyEnrolled = await Enrollment.findOne({ learner: learner._id, section: section._id, status: 'ENROLLED' });
+  if (!alreadyEnrolled) {
+    await enrollLearner(learner._id, section._id);
+  }
+
+  console.log('Seeded initial registrar data (section, learner, enrollment).');
+}
+
 async function run() {
   await connectDB();
   await seedRoles();
   await seedSupportingData();
+  await seedRegistrarData();
   console.log('Seed complete.');
   process.exit(0);
 }
