@@ -132,6 +132,55 @@ function assertDuplicateCatalogEntry(existingBook) {
   ensureUnique(existingBook, 'Book', 'catalogId');
 }
 
+// --- Department module guards ---
+
+function assertSectionCapacity(section) {
+  ensureExists(section, 'Section');
+  ensure(
+    section.enrolledCount < section.capacity,
+    `Section is at full capacity (${section.capacity}).`,
+    'SECTION_AT_CAPACITY',
+  );
+}
+
+function assertTrainerLoad(trainer, additionalHours) {
+  ensureExists(trainer, 'Trainer');
+  const projectedHours = trainer.scheduledHours + additionalHours;
+  ensure(
+    projectedHours <= trainer.contractHourLimit,
+    `Trainer contract hour limit exceeded: ${projectedHours}/${trainer.contractHourLimit} hours.`,
+    'TRAINER_OVERLOADED',
+  );
+}
+
+function assertStockAvailability(stockItem, quantityRequested) {
+  ensureExists(stockItem, 'Stock item');
+  ensure(
+    quantityRequested <= stockItem.quantityOnHand,
+    `Insufficient stock: requested ${quantityRequested}, on hand ${stockItem.quantityOnHand}.`,
+    'INSUFFICIENT_STOCK',
+  );
+}
+
+function assertBudgetAvailability(allocation, amount) {
+  ensureExists(allocation, 'Budget allocation');
+  const remaining = allocation.allocatedAmount - allocation.spentAmount;
+  ensure(
+    remaining >= amount,
+    `Insufficient budget: requested ${amount}, remaining ${remaining}.`,
+    'INSUFFICIENT_BUDGET',
+  );
+}
+
+function assertRoomCapacity(room, cohortSize) {
+  ensureExists(room, 'Room');
+  ensure(
+    cohortSize <= room.capacity,
+    `Exam cohort of ${cohortSize} exceeds room capacity (${room.capacity}).`,
+    'ROOM_CAPACITY_EXCEEDED',
+  );
+}
+
 module.exports = {
   GuardError,
   ensure,
@@ -149,4 +198,9 @@ module.exports = {
   assertBookNotDamaged,
   assertReservationLimit,
   assertDuplicateCatalogEntry,
+  assertSectionCapacity,
+  assertTrainerLoad,
+  assertStockAvailability,
+  assertBudgetAvailability,
+  assertRoomCapacity,
 };
