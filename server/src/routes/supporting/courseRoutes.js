@@ -1,4 +1,7 @@
 const controller = require('../../controllers/supporting/courseController');
 const { createCrudRouter } = require('../crudRouterFactory');
 
-module.exports = createCrudRouter(controller);
+const router = createCrudRouter(controller);
+router.post('/:id/retire', controller.retire);
+
+module.exports = router;

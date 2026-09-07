@@ -12,5 +12,7 @@ router.use('/leave-balances', require('./supporting/leaveBalanceRoutes'));
 router.use('/asset-assignments', require('./supporting/assetAssignmentRoutes'));
 router.use('/fee-accounts', require('./supporting/feeAccountRoutes'));
 router.use('/rooms', require('./supporting/roomRoutes'));
+router.use('/learners', require('./registrar/learnerRoutes'));
+router.use('/enrollments', require('./registrar/enrollmentRoutes'));
 
 module.exports = router;

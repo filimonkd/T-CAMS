@@ -23,6 +23,10 @@ app.use('/api', routes);
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    return res.status(409).json({ message: `Duplicate value for ${field}.`, code: 'DUPLICATE_KEY' });
+  }
   console.error(err);
   res.status(err.statusCode || 500).json({ message: err.message || 'Internal server error' });
 });

@@ -1,4 +1,7 @@
 const controller = require('../../controllers/supporting/programController');
 const { createCrudRouter } = require('../crudRouterFactory');
 
-module.exports = createCrudRouter(controller);
+const router = createCrudRouter(controller);
+router.post('/:id/approve', controller.approve);
+
+module.exports = router;
