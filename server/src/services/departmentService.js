@@ -14,7 +14,7 @@ const {
   assertSectionCapacity,
   assertTrainerLoad,
   assertStockAvailability,
-  assertBudgetAvailability,
+  assertBudgetAvailable,
   assertRoomCapacity,
 } = require('./guardService');
 
@@ -76,7 +76,7 @@ async function submitMaterialRequest(stockItemId, budgetAllocationId, quantityRe
   assertStockAvailability(stockItem, quantityRequested);
 
   const budgetAllocation = await BudgetAllocation.findById(budgetAllocationId);
-  assertBudgetAvailability(budgetAllocation, estimatedCost);
+  assertBudgetAvailable(budgetAllocation, estimatedCost);
 
   return MaterialRequest.create({
     stockItem: stockItemId,
@@ -95,7 +95,7 @@ async function approveMaterialRequest(requestId) {
   assertStockAvailability(stockItem, request.quantityRequested);
 
   const budgetAllocation = await BudgetAllocation.findById(request.budgetAllocation);
-  assertBudgetAvailability(budgetAllocation, request.estimatedCost);
+  assertBudgetAvailable(budgetAllocation, request.estimatedCost);
 
   transitionStatus(request, 'status', ['REQUESTED'], 'APPROVED');
   await request.save();
@@ -123,7 +123,7 @@ async function submitMaintenanceRequisition(roomId, budgetAllocationId, descript
   ensureExists(room, 'Room');
 
   const budgetAllocation = await BudgetAllocation.findById(budgetAllocationId);
-  assertBudgetAvailability(budgetAllocation, estimatedCost);
+  assertBudgetAvailable(budgetAllocation, estimatedCost);
 
   return MaintenanceRequisition.create({
     room: roomId,
@@ -138,7 +138,7 @@ async function approveMaintenanceRequisition(requisitionId) {
   ensureExists(requisition, 'Maintenance requisition');
 
   const budgetAllocation = await BudgetAllocation.findById(requisition.budgetAllocation);
-  assertBudgetAvailability(budgetAllocation, requisition.estimatedCost);
+  assertBudgetAvailable(budgetAllocation, requisition.estimatedCost);
 
   transitionStatus(requisition, 'status', ['REQUESTED'], 'APPROVED');
   await requisition.save();

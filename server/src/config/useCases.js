@@ -29,6 +29,8 @@ const MODULES = {
   QMS: 'QMS',
   LIBRARY: 'LIBRARY',
   DEPARTMENT: 'DEPARTMENT',
+  BUDGET_RPB: 'BUDGET_RPB',
+  FINANCE_ADMIN: 'FINANCE_ADMIN',
 };
 
 const COMPLIANCE_STATUS = 'DRAFT_PLACEHOLDER';
@@ -103,11 +105,29 @@ const useCases = [
   // --- Department (TraineePlacement, TrainingSchedule, MaterialRequest, CourseOutline, MaintenanceRequisition, AttendanceRecord, ExamRoomAssignment) ---
   { code: 'UC-ADMIN-DEPT-001', name: 'Place Trainee into Section', module: MODULES.DEPARTMENT, description: 'Administratively place a trainee into a section, blocked at section capacity.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-DEPT §1.1 (placeholder)', guardRules: ['assertSectionCapacity'] },
   { code: 'UC-ADMIN-DEPT-002', name: 'Create Training Schedule', module: MODULES.DEPARTMENT, description: 'Schedule a training session for a trainer, blocked over their contract hour limit.', isoClause: '7.1.2', regulatoryClause: 'INST-POL-DEPT §2.1 (placeholder)', guardRules: ['assertTrainerLoad'] },
-  { code: 'UC-ADMIN-DEPT-003', name: 'Submit/Approve Material Request', module: MODULES.DEPARTMENT, description: 'Request materials from stock against a budget allocation, blocked on insufficient stock or budget.', isoClause: '8.4.2', regulatoryClause: 'INST-POL-DEPT §3.1 (placeholder)', guardRules: ['assertStockAvailability', 'assertBudgetAvailability'] },
+  { code: 'UC-ADMIN-DEPT-003', name: 'Submit/Approve Material Request', module: MODULES.DEPARTMENT, description: 'Request materials from stock against a budget allocation, blocked on insufficient stock or budget.', isoClause: '8.4.2', regulatoryClause: 'INST-POL-DEPT §3.1 (placeholder)', guardRules: ['assertStockAvailability', 'assertBudgetAvailable'] },
   { code: 'UC-ADMIN-DEPT-004', name: 'Approve Course Outline', module: MODULES.DEPARTMENT, description: 'Review and approve a course outline/syllabus version (DRAFT -> APPROVED).', isoClause: '8.3.4', regulatoryClause: 'INST-POL-DEPT §4.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
-  { code: 'UC-ADMIN-DEPT-005', name: 'Submit/Approve Maintenance Requisition', module: MODULES.DEPARTMENT, description: 'Request maintenance work on a room against a budget allocation, blocked on insufficient budget.', isoClause: '7.1.3', regulatoryClause: 'INST-POL-DEPT §5.1 (placeholder)', guardRules: ['assertBudgetAvailability'] },
+  { code: 'UC-ADMIN-DEPT-005', name: 'Submit/Approve Maintenance Requisition', module: MODULES.DEPARTMENT, description: 'Request maintenance work on a room against a budget allocation, blocked on insufficient budget.', isoClause: '7.1.3', regulatoryClause: 'INST-POL-DEPT §5.1 (placeholder)', guardRules: ['assertBudgetAvailable'] },
   { code: 'UC-ADMIN-DEPT-006', name: 'Record Attendance', module: MODULES.DEPARTMENT, description: 'Record a learner\'s attendance status for a section on a given date.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-DEPT §6.1 (placeholder)', guardRules: [] },
   { code: 'UC-ADMIN-DEPT-007', name: 'Assign Exam Room', module: MODULES.DEPARTMENT, description: 'Assign a room for an exam cohort, blocked if the cohort exceeds the room\'s physical capacity.', isoClause: '7.1.3', regulatoryClause: 'INST-POL-DEPT §7.1 (placeholder)', guardRules: ['assertRoomCapacity'] },
+
+  // --- Budget/RPB (MonthlyBudgetReport and AnnualBudgetPlan are shared entities, defined once in
+  //     server/src/models/budget/, but driven through the RPB chain here vs. the Finance chain
+  //     below: RPB = Budget Officer -> Bureau; Finance = Finance Officer -> Auditor -> Bureau) ---
+  { code: 'UC-ADMIN-RPB-001', name: 'Monthly Budget Report (RPB chain)', module: MODULES.BUDGET_RPB, description: 'Form GW/601-01. RPB approval chain: Budget Officer -> Bureau.', isoClause: '9.1.3', regulatoryClause: 'INST-POL-RPB §1.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-RPB-002', name: 'Annual Budget Plan (RPB chain)', module: MODULES.BUDGET_RPB, description: 'Form GW/601-02. RPB approval chain: Budget Officer -> Bureau.', isoClause: '6.1.1', regulatoryClause: 'INST-POL-RPB §1.2 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-RPB-003', name: 'Open/Close Budget Request Cycle', module: MODULES.BUDGET_RPB, description: 'Open a fiscal-year budget request cycle for departments and close it once complete.', isoClause: '7.1.1', regulatoryClause: 'INST-POL-RPB §2.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-RPB-004', name: 'Submit/Approve Department Budget Request', module: MODULES.BUDGET_RPB, description: 'Department requests a share of a budget allocation for the cycle, blocked on insufficient budget.', isoClause: '7.1.1', regulatoryClause: 'INST-POL-RPB §3.1 (placeholder)', guardRules: ['assertBudgetAvailable'] },
+  { code: 'UC-ADMIN-RPB-005', name: 'Create/Submit Bureau Submission', module: MODULES.BUDGET_RPB, description: 'Aggregate a cycle\'s approved department requests into a submission sent to the Bureau.', isoClause: '7.1.1', regulatoryClause: 'INST-POL-RPB §4.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-RPB-006', name: 'Record Budget Utilization Entry', module: MODULES.BUDGET_RPB, description: 'Record actual spend against a budget allocation, blocked on insufficient remaining budget.', isoClause: '9.1.3', regulatoryClause: 'INST-POL-RPB §5.1 (placeholder)', guardRules: ['assertBudgetAvailable'] },
+
+  // --- Finance ---
+  { code: 'UC-ADMIN-FIN-001', name: 'Monthly Budget Report (Finance chain)', module: MODULES.FINANCE_ADMIN, description: 'Form GW/601-01. Finance approval chain: Finance Officer -> Auditor -> Bureau.', isoClause: '9.1.3', regulatoryClause: 'INST-POL-FINADM §1.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-FIN-002', name: 'Annual Budget Plan (Finance chain)', module: MODULES.FINANCE_ADMIN, description: 'Form GW/601-02. Finance approval chain: Finance Officer -> Auditor -> Bureau.', isoClause: '6.1.1', regulatoryClause: 'INST-POL-FINADM §1.2 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-FIN-003', name: 'Submit/Finalize Bid Evaluation', module: MODULES.FINANCE_ADMIN, description: 'Evaluate a vendor bid and finalize it, blocked on an unapproved vendor or a score below 70.', isoClause: '8.4.1', regulatoryClause: 'INST-POL-FINADM §2.1 (placeholder)', guardRules: ['assertVendorApproved', 'assertBidScoreThreshold'] },
+  { code: 'UC-ADMIN-FIN-004', name: 'Issue Purchase Order', module: MODULES.FINANCE_ADMIN, description: 'Issue a purchase order to a vendor, blocked if the vendor is not approved.', isoClause: '8.4.2', regulatoryClause: 'INST-POL-FINADM §2.2 (placeholder)', guardRules: ['assertVendorApproved'] },
+  { code: 'UC-ADMIN-FIN-005', name: 'Submit/Approve Expense Claim', module: MODULES.FINANCE_ADMIN, description: 'Submit an expense claim against a budget allocation, blocked on insufficient budget or a justification under 50 characters.', isoClause: '8.2.1', regulatoryClause: 'INST-POL-FINADM §3.1 (placeholder)', guardRules: ['assertBudgetAvailable', 'assertExpenseJustification'] },
+  { code: 'UC-ADMIN-FIN-006', name: 'Record Petty Cash Transaction', module: MODULES.FINANCE_ADMIN, description: 'Record a petty cash disbursement, blocked if it exceeds the active fund\'s current balance.', isoClause: '8.2.1', regulatoryClause: 'INST-POL-FINADM §4.1 (placeholder)', guardRules: ['assertPettyCashLimit'] },
 ];
 
 module.exports = { MODULES, COMPLIANCE_STATUS, useCases };
