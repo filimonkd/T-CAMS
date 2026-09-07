@@ -28,6 +28,7 @@ const MODULES = {
   FACILITIES: 'FACILITIES',
   QMS: 'QMS',
   LIBRARY: 'LIBRARY',
+  DEPARTMENT: 'DEPARTMENT',
 };
 
 const COMPLIANCE_STATUS = 'DRAFT_PLACEHOLDER';
@@ -98,6 +99,15 @@ const useCases = [
   { code: 'UC-LIB-904', name: 'Submit Binding Request', module: MODULES.LIBRARY, description: 'Send a book for binding/repair, taking it out of circulation until complete.', isoClause: '8.5.4', regulatoryClause: 'INST-POL-LIB §4.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
   { code: 'UC-LIB-905', name: 'Record Overdue Fine Payment/Waiver', module: MODULES.LIBRARY, description: 'Settle or waive a fine auto-calculated from an overdue return.', isoClause: '8.2.1', regulatoryClause: 'INST-POL-LIB §5.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
   { code: 'UC-LIB-906', name: 'Generate Overdue Loan Report', module: MODULES.LIBRARY, description: 'Query active loans past their due date, with computed days overdue.', isoClause: '9.1.3', regulatoryClause: 'INST-POL-LIB §6.1 (placeholder)', guardRules: [] },
+
+  // --- Department (TraineePlacement, TrainingSchedule, MaterialRequest, CourseOutline, MaintenanceRequisition, AttendanceRecord, ExamRoomAssignment) ---
+  { code: 'UC-ADMIN-DEPT-001', name: 'Place Trainee into Section', module: MODULES.DEPARTMENT, description: 'Administratively place a trainee into a section, blocked at section capacity.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-DEPT §1.1 (placeholder)', guardRules: ['assertSectionCapacity'] },
+  { code: 'UC-ADMIN-DEPT-002', name: 'Create Training Schedule', module: MODULES.DEPARTMENT, description: 'Schedule a training session for a trainer, blocked over their contract hour limit.', isoClause: '7.1.2', regulatoryClause: 'INST-POL-DEPT §2.1 (placeholder)', guardRules: ['assertTrainerLoad'] },
+  { code: 'UC-ADMIN-DEPT-003', name: 'Submit/Approve Material Request', module: MODULES.DEPARTMENT, description: 'Request materials from stock against a budget allocation, blocked on insufficient stock or budget.', isoClause: '8.4.2', regulatoryClause: 'INST-POL-DEPT §3.1 (placeholder)', guardRules: ['assertStockAvailability', 'assertBudgetAvailability'] },
+  { code: 'UC-ADMIN-DEPT-004', name: 'Approve Course Outline', module: MODULES.DEPARTMENT, description: 'Review and approve a course outline/syllabus version (DRAFT -> APPROVED).', isoClause: '8.3.4', regulatoryClause: 'INST-POL-DEPT §4.1 (placeholder)', guardRules: ['ensureStatusTransitionAllowed'] },
+  { code: 'UC-ADMIN-DEPT-005', name: 'Submit/Approve Maintenance Requisition', module: MODULES.DEPARTMENT, description: 'Request maintenance work on a room against a budget allocation, blocked on insufficient budget.', isoClause: '7.1.3', regulatoryClause: 'INST-POL-DEPT §5.1 (placeholder)', guardRules: ['assertBudgetAvailability'] },
+  { code: 'UC-ADMIN-DEPT-006', name: 'Record Attendance', module: MODULES.DEPARTMENT, description: 'Record a learner\'s attendance status for a section on a given date.', isoClause: '8.5.1', regulatoryClause: 'INST-POL-DEPT §6.1 (placeholder)', guardRules: [] },
+  { code: 'UC-ADMIN-DEPT-007', name: 'Assign Exam Room', module: MODULES.DEPARTMENT, description: 'Assign a room for an exam cohort, blocked if the cohort exceeds the room\'s physical capacity.', isoClause: '7.1.3', regulatoryClause: 'INST-POL-DEPT §7.1 (placeholder)', guardRules: ['assertRoomCapacity'] },
 ];
 
 module.exports = { MODULES, COMPLIANCE_STATUS, useCases };

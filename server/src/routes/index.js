@@ -21,5 +21,13 @@ router.use('/library/reservations', require('./library/bookReservationRoutes'));
 router.use('/library/binding-requests', require('./library/bindingRequestRoutes'));
 router.use('/library/fines', require('./library/fineRoutes'));
 router.use('/library/reports', require('./library/reportRoutes'));
+router.use('/department/trainers', require('./department/trainerRoutes'));
+router.use('/department/trainee-placements', require('./department/traineePlacementRoutes'));
+router.use('/department/training-schedules', require('./department/trainingScheduleRoutes'));
+router.use('/department/material-requests', require('./department/materialRequestRoutes'));
+router.use('/department/course-outlines', require('./department/courseOutlineRoutes'));
+router.use('/department/maintenance-requisitions', require('./department/maintenanceRequisitionRoutes'));
+router.use('/department/attendance-records', require('./department/attendanceRecordRoutes'));
+router.use('/department/exam-room-assignments', require('./department/examRoomAssignmentRoutes'));
 
 module.exports = router;
