@@ -66,7 +66,7 @@ function ensureCapacityAvailable(currentCount, capacity, entityName = 'Section')
   );
 }
 
-function ensureSufficientLeaveBalance(leaveBalance, days) {
+function assertLeaveBalance(leaveBalance, days) {
   ensureExists(leaveBalance, 'Leave balance');
   const available = leaveBalance.entitledDays + leaveBalance.carriedOverDays - leaveBalance.usedDays;
   ensure(
@@ -217,6 +217,29 @@ function assertExpenseJustification(justification) {
   );
 }
 
+// --- HR module guards ---
+
+function assertNoActiveClearanceHold(pendingClearanceCount, entityName = 'Employee') {
+  ensure(
+    pendingClearanceCount === 0,
+    `${entityName} has ${pendingClearanceCount} pending clearance(s) and cannot proceed until resolved.`,
+    'CLEARANCE_HOLD_ACTIVE',
+  );
+}
+
+function assertBiometricUnique(existingEnrollment) {
+  ensureUnique(existingEnrollment, 'Biometric enrollment', 'biometricHash');
+}
+
+function assertContractPrerequisite(contract) {
+  ensureExists(contract, 'Employment contract');
+  ensure(
+    contract.status === 'ACTIVE',
+    `Employee does not have an active, signed employment contract (status: ${contract.status}).`,
+    'NO_ACTIVE_CONTRACT',
+  );
+}
+
 module.exports = {
   GuardError,
   ensure,
@@ -226,7 +249,7 @@ module.exports = {
   ensureSufficientBudget,
   ensureSufficientStock,
   ensureCapacityAvailable,
-  ensureSufficientLeaveBalance,
+  assertLeaveBalance,
   ensureAssetAvailable,
   ensureRoomAvailable,
   transitionStatus,
@@ -243,4 +266,7 @@ module.exports = {
   assertBidScoreThreshold,
   assertPettyCashLimit,
   assertExpenseJustification,
+  assertNoActiveClearanceHold,
+  assertBiometricUnique,
+  assertContractPrerequisite,
 };
