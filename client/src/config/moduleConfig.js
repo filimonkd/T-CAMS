@@ -25,6 +25,11 @@
 
 const REF_TYPE = 'ref'; // rendered as a plain text input for an ObjectId string in this scaffold
 
+// Matches server/src/models/User.js's ROLE_NAMES exactly. The last four were
+// added in Phase 10 alongside the User model - the Phase 10 seed spec asked
+// for library/department/budget/advisor demo users that had no matching
+// role in the original 6, which would have rendered an empty sidebar for
+// each of them.
 export const ROLES = {
   ADMIN: 'ADMIN',
   REGISTRAR: 'REGISTRAR',
@@ -32,6 +37,10 @@ export const ROLES = {
   HR_OFFICER: 'HR_OFFICER',
   FINANCE_OFFICER: 'FINANCE_OFFICER',
   AUDITOR: 'AUDITOR',
+  LIBRARY_OFFICER: 'LIBRARY_OFFICER',
+  DEPARTMENT_HEAD: 'DEPARTMENT_HEAD',
+  BUDGET_OFFICER: 'BUDGET_OFFICER',
+  ADVISOR: 'ADVISOR',
 };
 
 export const moduleConfig = {
@@ -904,14 +913,14 @@ export const moduleConfig = {
 // broadly since Role.js grants it QMS:READ/AUDIT:READ across the system.
 export const moduleGroups = [
   { key: 'procurement', label: 'Procurement', roles: [ROLES.PROCUREMENT_OFFICER, ROLES.AUDITOR] },
-  { key: 'academic', label: 'Academic (Registrar)', roles: [ROLES.REGISTRAR, ROLES.AUDITOR] },
+  { key: 'academic', label: 'Academic (Registrar)', roles: [ROLES.REGISTRAR, ROLES.ADVISOR, ROLES.AUDITOR] },
   { key: 'hrCore', label: 'HR - Leave', roles: [ROLES.HR_OFFICER, ROLES.AUDITOR] },
   { key: 'asset', label: 'Assets', roles: [ROLES.ADMIN, ROLES.AUDITOR] },
   { key: 'studentFinance', label: 'Student Fees', roles: [ROLES.FINANCE_OFFICER, ROLES.AUDITOR] },
   { key: 'facilities', label: 'Facilities', roles: [ROLES.ADMIN, ROLES.AUDITOR] },
-  { key: 'library', label: 'Library', roles: [ROLES.ADMIN, ROLES.AUDITOR] },
-  { key: 'department', label: 'Department', roles: [ROLES.ADMIN, ROLES.AUDITOR] },
-  { key: 'budget', label: 'Budget (RPB)', roles: [ROLES.FINANCE_OFFICER, ROLES.AUDITOR] },
+  { key: 'library', label: 'Library', roles: [ROLES.LIBRARY_OFFICER, ROLES.AUDITOR] },
+  { key: 'department', label: 'Department', roles: [ROLES.DEPARTMENT_HEAD, ROLES.AUDITOR] },
+  { key: 'budget', label: 'Budget (RPB)', roles: [ROLES.BUDGET_OFFICER, ROLES.AUDITOR] },
   { key: 'finance', label: 'Finance', roles: [ROLES.FINANCE_OFFICER, ROLES.AUDITOR] },
   { key: 'hrAdmin', label: 'Human Resources', roles: [ROLES.HR_OFFICER, ROLES.AUDITOR] },
 ];
