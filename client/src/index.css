@@ -2,6 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-slate-50 text-slate-900;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-slate-50 font-sans text-slate-900 antialiased;
+    @apply dark:bg-slate-950 dark:text-slate-100;
+  }
+
+  /* One focus treatment everywhere, so keyboard users get a consistent ring
+     that is visible on both surfaces. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-600 ring-offset-2 ring-offset-white;
+    @apply dark:ring-brand-500 dark:ring-offset-slate-950;
+  }
+
+  /* Recharts draws its own focus outline on the surface wrapper; the tooltip
+     already conveys the hovered point. */
+  .recharts-wrapper:focus,
+  .recharts-surface:focus {
+    outline: none;
+  }
+}
+
+@layer utilities {
+  /* Used by the sidebar and any long scroll region. */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300 dark:bg-slate-700;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

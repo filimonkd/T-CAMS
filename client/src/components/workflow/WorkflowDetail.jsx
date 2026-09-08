@@ -1,11 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import api, { getErrorMessage } from '../../api/axios';
 import { moduleConfig } from '../../config/moduleConfig';
 import StatusBadge from './StatusBadge';
 import ApprovalAction from './ApprovalAction';
+import Button from '../ui/Button';
+import Card, { CardBody, CardHeader, CardTitle } from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Skeleton from '../ui/Skeleton';
+import Badge from '../ui/Badge';
+import {
+  IconAlertCircle,
+  IconArrowRight,
+  IconChevronLeft,
+  IconClock,
+  IconRefresh,
+  IconShield,
+} from '../ui/icons';
 
-function formatValue(value) {
+// Fields that are plumbing rather than record content.
+const HIDDEN_FIELDS = ['__v', '_id', 'status'];
+
+const DATE_FIELD = /(At|Date)$/;
+
+function humanizeKey(key) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
+function formatValue(key, value) {
   if (value === null || value === undefined || value === '') {
     return '-';
   }
@@ -15,14 +40,24 @@ function formatValue(value) {
     }
     return JSON.stringify(value);
   }
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  // Mongo returns ISO strings; render them in the viewer's locale.
+  if (DATE_FIELD.test(key) && typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleString();
+    }
+  }
   return String(value);
 }
 
 /**
  * Generic detail view for any module/entity - fetches the record plus its
- * complete AuditLog history from GET /api/audit/:entityType/:entityId
- * (added in Phase 8), renders every field generically, and exposes whatever
- * workflow actions the module declares.
+ * complete AuditLog history from GET /api/audit/:entityType/:entityId,
+ * renders every field generically, and exposes whatever workflow actions the
+ * module declares.
  */
 export default function WorkflowDetail({ moduleKey }) {
   const { id } = useParams();
@@ -57,68 +92,162 @@ export default function WorkflowDetail({ moduleKey }) {
   }, [load]);
 
   if (!config) {
-    return <p className="text-sm text-red-600">Unknown module: {moduleKey}</p>;
+    return (
+      <Card>
+        <EmptyState icon={IconAlertCircle} title="Unknown module" description={`No configuration exists for "${moduleKey}".`} />
+      </Card>
+    );
   }
+
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Loading...</p>;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Card>
+          <CardBody className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-4 w-full" />
+            ))}
+          </CardBody>
+        </Card>
+      </div>
+    );
   }
+
   if (error) {
-    return <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>;
+    return (
+      <Card>
+        <EmptyState
+          icon={IconAlertCircle}
+          title="Could not load this record"
+          description={error}
+          action={
+            <Button variant="outline" leadingIcon={IconRefresh} onClick={load}>
+              Try again
+            </Button>
+          }
+        />
+      </Card>
+    );
   }
+
   if (!record) {
     return null;
   }
 
+  const fields = Object.entries(record).filter(([key]) => !HIDDEN_FIELDS.includes(key));
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">
-          {config.label} - {record.code || record._id}
-        </h1>
-        <StatusBadge status={record.status} />
-      </div>
+      <div>
+        <Link
+          to={`/modules/${moduleKey}`}
+          className="mb-3 inline-flex items-center gap-1 rounded text-sm text-slate-500 transition-colors duration-200 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        >
+          <IconChevronLeft className="h-3.5 w-3.5" />
+          Back to {config.label}
+        </Link>
 
-      <div className="rounded border border-slate-200 bg-white p-4">
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {Object.entries(record)
-            .filter(([key]) => !['__v', '_id'].includes(key))
-            .map(([key, value]) => (
-              <div key={key}>
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{key}</dt>
-                <dd className="text-sm text-slate-800">{formatValue(value)}</dd>
-              </div>
-            ))}
-        </dl>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+              {record.code || record.name || record.title || config.label}
+            </h1>
+            <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{record._id}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <StatusBadge status={record.status} />
+            <Button variant="ghost" size="sm" iconOnly leadingIcon={IconRefresh} onClick={load} aria-label="Reload record" />
+          </div>
+        </div>
       </div>
 
       {config.actions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {config.actions.map((action) => (
-            <ApprovalAction key={action.key} action={action} recordId={id} onDone={load} />
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Available actions</CardTitle>
+          </CardHeader>
+          <CardBody className="flex flex-wrap gap-2">
+            {config.actions.map((action) => (
+              <ApprovalAction key={action.key} action={action} recordId={id} onDone={load} />
+            ))}
+          </CardBody>
+        </Card>
       )}
 
-      <div>
-        <h2 className="mb-2 text-sm font-semibold text-slate-700">Approval History</h2>
-        {history.length === 0 ? (
-          <p className="text-sm text-slate-400">No recorded history yet.</p>
-        ) : (
-          <ol className="space-y-2 border-l-2 border-slate-200 pl-4">
-            {history.map((entry) => (
-              <li key={entry._id}>
-                <p className="text-sm font-medium text-slate-800">
-                  {entry.fromStatus} &rarr; {entry.toStatus}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {new Date(entry.occurredAt).toLocaleString()}
-                  {entry.isoClause ? ` · ISO ${entry.isoClause}` : ''}
-                </p>
-              </li>
+      <Card>
+        <CardHeader>
+          <CardTitle>Record details</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+            {fields.map(([key, value]) => (
+              <div key={key} className="min-w-0">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  {humanizeKey(key)}
+                </dt>
+                <dd className="mt-1 break-words text-sm text-slate-800 dark:text-slate-200">
+                  {formatValue(key, value)}
+                </dd>
+              </div>
             ))}
-          </ol>
+          </dl>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Approval history</CardTitle>
+        </CardHeader>
+        {history.length === 0 ? (
+          <EmptyState
+            icon={IconClock}
+            title="No recorded history yet"
+            description="Status transitions appear here once this record moves through its workflow."
+          />
+        ) : (
+          <CardBody>
+            <ol className="relative space-y-5 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-slate-200 dark:before:bg-slate-800">
+              {history.map((entry) => (
+                <li key={entry._id} className="relative pl-7">
+                  <span
+                    className="absolute left-0 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-brand-500 ring-1 ring-brand-200 dark:border-slate-900 dark:ring-brand-500/30"
+                    aria-hidden="true"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={entry.fromStatus} size="sm" />
+                    <IconArrowRight className="h-3 w-3 text-slate-400" />
+                    <StatusBadge status={entry.toStatus} size="sm" />
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1">
+                      <IconClock className="h-3 w-3" />
+                      {new Date(entry.occurredAt).toLocaleString()}
+                    </span>
+                    {entry.useCaseCode && <span className="font-mono">{entry.useCaseCode}</span>}
+                    {entry.isoClause && (
+                      <Badge tone="neutral" size="sm">
+                        <IconShield className="h-3 w-3" />
+                        ISO {entry.isoClause}
+                      </Badge>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </CardBody>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

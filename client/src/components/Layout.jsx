@@ -1,61 +1,89 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { moduleGroups, getModulesForGroup } from '../config/moduleConfig';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import cn from '../utils/cn';
+import Sidebar from './layout/Sidebar';
+import TopBar from './layout/TopBar';
+import Button from './ui/Button';
+import { IconX } from './ui/icons';
 
+/**
+ * App shell: a persistent sidebar from `lg` up, and an overlay drawer below
+ * that. Composition only - the navigation itself lives in layout/Sidebar.jsx.
+ */
 export default function Layout() {
-  const { user, logout, hasRole } = useAuth();
-  const visibleGroups = moduleGroups.filter((group) => hasRole(group.roles));
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  // A route change means the drawer has served its purpose.
+  useEffect(() => {
+    setIsDrawerOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isDrawerOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') setIsDrawerOpen(false);
+    }
+    document.addEventListener('keydown', handleKeyDown);
+
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = overflow;
+    };
+  }, [isDrawerOpen]);
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 shrink-0 border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-4 py-4">
-          <p className="text-lg font-semibold text-slate-900">T-CAMS</p>
-          <p className="text-xs text-slate-500">{user?.role || 'Guest'}</p>
-        </div>
-        <nav className="space-y-4 px-2 py-4">
-          {visibleGroups.map((group) => {
-            const modules = getModulesForGroup(group.key);
-            if (modules.length === 0) {
-              return null;
-            }
-            return (
-              <div key={group.key}>
-                <p className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{group.label}</p>
-                <ul className="mt-1 space-y-0.5">
-                  {modules.map((module) => (
-                    <li key={module.key}>
-                      <NavLink
-                        to={`/modules/${module.key}`}
-                        className={({ isActive }) =>
-                          `block rounded px-2 py-1.5 text-sm ${
-                            isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
-                          }`
-                        }
-                      >
-                        {module.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </nav>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Desktop: fixed rail. */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-slate-200 dark:border-slate-800 lg:block">
+        <Sidebar />
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-          <p className="text-sm text-slate-500">{user?.email}</p>
-          <button
-            type="button"
-            onClick={logout}
-            className="rounded px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
-          >
-            Log out
-          </button>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6">
+      {/* Mobile / tablet: overlay drawer. */}
+      <div
+        className={cn(
+          'fixed inset-0 z-50 lg:hidden',
+          isDrawerOpen ? 'pointer-events-auto' : 'pointer-events-none',
+        )}
+        aria-hidden={!isDrawerOpen}
+      >
+        <div
+          className={cn(
+            'absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-200',
+            isDrawerOpen ? 'opacity-100' : 'opacity-0',
+          )}
+          onClick={() => setIsDrawerOpen(false)}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+          className={cn(
+            'absolute inset-y-0 left-0 w-[17rem] max-w-[85vw] border-r border-slate-200 shadow-overlay transition-transform duration-200 ease-out dark:border-slate-800',
+            isDrawerOpen ? 'translate-x-0' : '-translate-x-full',
+          )}
+        >
+          <div className="absolute right-2 top-3 z-10">
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leadingIcon={IconX}
+              onClick={() => setIsDrawerOpen(false)}
+              aria-label="Close navigation"
+            />
+          </div>
+          <Sidebar onNavigate={() => setIsDrawerOpen(false)} />
+        </div>
+      </div>
+
+      <div className="lg:pl-64">
+        <TopBar onOpenSidebar={() => setIsDrawerOpen(true)} />
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
           <Outlet />
         </main>
       </div>

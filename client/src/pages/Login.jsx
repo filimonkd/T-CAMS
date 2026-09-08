@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../api/axios';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import ThemeToggle from '../components/layout/ThemeToggle';
+import { IconAlertCircle, IconShield } from '../components/ui/icons';
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,45 +33,73 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-slate-900">T-CAMS</h1>
-        <p className="mb-6 text-sm text-slate-500">Sign in to continue.</p>
+    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="flex justify-end p-4">
+        <ThemeToggle />
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              autoComplete="username"
-              className="rounded border border-slate-300 px-3 py-2"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-slate-700">Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              autoComplete="current-password"
-              className="rounded border border-slate-300 px-3 py-2"
-            />
-          </label>
+      <div className="flex flex-1 items-center justify-center px-4 pb-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-card bg-brand-600 text-white shadow-card">
+              <IconShield className="h-5 w-5" />
+            </span>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              Sign in to T-CAMS
+            </h1>
+            <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+              Training &amp; Compliance Administration Management
+            </p>
+          </div>
 
-          {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          <div className="rounded-card border border-slate-200 bg-white p-6 shadow-card dark:border-slate-800 dark:bg-slate-900">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                autoComplete="username"
+                autoFocus
+                placeholder="you@example.com"
+              />
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 rounded-control border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                >
+                  <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p className="min-w-0 break-words">{error}</p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                isLoading={isSubmitting}
+              >
+                {isSubmitting ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </form>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
+            Authorised access only. Activity is recorded in the compliance audit log.
+          </p>
+        </div>
       </div>
     </div>
   );
