@@ -1,27 +1,35 @@
 import { useState } from 'react';
 import api, { getErrorMessage } from '../../api/axios';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import { useToast } from '../ui/Toast';
+import { IconAlertCircle } from '../ui/icons';
 
-const VARIANT_CLASSES = {
-  success: 'bg-emerald-600 hover:bg-emerald-500',
-  danger: 'bg-red-600 hover:bg-red-500',
-  neutral: 'bg-slate-600 hover:bg-slate-500',
+// moduleConfig declares variants as success/danger/neutral; map them onto the
+// shared Button variants without changing any config.
+const VARIANT_MAP = {
+  success: 'success',
+  danger: 'danger',
+  neutral: 'outline',
 };
 
 /**
  * Reusable action button for any workflow transition (approve/reject/
  * escalate/etc.) defined in moduleConfig.js. Actions with `inputs` open a
- * small confirm modal to collect a request body first; actions with none
- * fire immediately. Calls onDone() after a successful request so the
- * caller (WorkflowDetail) can refetch the record and its history.
+ * confirm modal to collect a request body first; actions with none fire
+ * immediately. Calls onDone() after a successful request so the caller
+ * (WorkflowDetail) can refetch the record and its history.
  */
 export default function ApprovalAction({ action, recordId, onDone }) {
+  const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [values, setValues] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const hasInputs = Boolean(action.inputs && action.inputs.length > 0);
-  const variantClass = VARIANT_CLASSES[action.variant] || VARIANT_CLASSES.neutral;
+  const buttonVariant = VARIANT_MAP[action.variant] || 'outline';
 
   async function run() {
     setIsSubmitting(true);
@@ -30,15 +38,23 @@ export default function ApprovalAction({ action, recordId, onDone }) {
       await api({ method: action.method || 'post', url: action.path(recordId), data: values });
       setIsOpen(false);
       setValues({});
+      toast.success(`${action.label} completed.`);
       onDone?.();
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      // A guard rejection is the expected outcome here, not a crash - surface
+      // it in the modal when one is open, and as a toast for direct actions.
+      if (!hasInputs) {
+        toast.error(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
   function handleClick() {
+    setError('');
     if (hasInputs) {
       setIsOpen(true);
     } else {
@@ -48,52 +64,54 @@ export default function ApprovalAction({ action, recordId, onDone }) {
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant={buttonVariant}
+        size="md"
         onClick={handleClick}
-        className={`rounded px-3 py-1.5 text-sm font-medium text-white ${variantClass}`}
+        isLoading={isSubmitting && !hasInputs}
       >
         {action.label}
-      </button>
+      </Button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded bg-white p-5 shadow-lg">
-            <h3 className="mb-3 text-base font-semibold text-slate-900">{action.label}</h3>
-            {error && <p className="mb-3 rounded bg-red-50 px-2 py-1 text-sm text-red-700">{error}</p>}
-            <div className="space-y-3">
-              {action.inputs.map((input) => (
-                <label key={input.key} className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-slate-700">{input.label}</span>
-                  <input
-                    type={input.type || 'text'}
-                    value={values[input.key] || ''}
-                    onChange={(event) => setValues((prev) => ({ ...prev, [input.key]: event.target.value }))}
-                    className="rounded border border-slate-300 px-2 py-1"
-                  />
-                </label>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="rounded px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={run}
-                disabled={isSubmitting}
-                className={`rounded px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${variantClass}`}
-              >
-                {isSubmitting ? 'Submitting...' : 'Confirm'}
-              </button>
-            </div>
+      <Modal
+        isOpen={isOpen}
+        onClose={() => !isSubmitting && setIsOpen(false)}
+        title={action.label}
+        description="Provide the details below to complete this transition."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button variant={buttonVariant} onClick={run} isLoading={isSubmitting}>
+              {isSubmitting ? 'Submitting…' : 'Confirm'}
+            </Button>
+          </>
+        }
+      >
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2.5 rounded-control border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+          >
+            <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="min-w-0 break-words">{error}</p>
           </div>
+        )}
+
+        <div className="space-y-4">
+          {(action.inputs || []).map((input) => (
+            <Input
+              key={input.key}
+              label={input.label}
+              type={input.type || 'text'}
+              value={values[input.key] || ''}
+              onChange={(event) => setValues((prev) => ({ ...prev, [input.key]: event.target.value }))}
+            />
+          ))}
         </div>
-      )}
+      </Modal>
     </>
   );
 }
