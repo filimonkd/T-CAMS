@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node -r dotenv/config ../scripts/seed.js"
+    "seed": "node -r dotenv/config ../scripts/seed.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
