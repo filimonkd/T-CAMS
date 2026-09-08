@@ -11,7 +11,11 @@
  * left untouched, so running `npm run seed` twice does not duplicate data
  * or re-trigger already-completed workflows.
  */
-require('dotenv').config({ path: require('path').join(__dirname, '../server/.env') });
+// dotenv is NOT required here. This file lives in scripts/, outside server/,
+// so `require('dotenv')` would resolve from scripts/ upward and never find
+// server/node_modules. `npm run seed` preloads it instead, via
+// `node -r dotenv/config`, which resolves from the server/ working directory
+// and loads server/.env. Run this script through `npm run seed`, not directly.
 
 const { connectDB } = require('../server/src/config/db');
 const Role = require('../server/src/models/Role');
