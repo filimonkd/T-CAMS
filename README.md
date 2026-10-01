@@ -126,6 +126,28 @@ left untouched. It creates:
   enrollment for "Jane HR Sample" — it should be blocked by
   `assertNoActiveClearanceHold` because of her pending `MedicalClearance`.
 
+## Tests
+
+Two suites, split by whether they need a database.
+
+```bash
+cd server
+npm test              # fast, no database needed (~1s)
+npm run test:integration   # needs a MongoDB
+```
+
+`npm test` covers the guard layer, `transitionStatus`, both approval
+chains and the HTTP middleware. It needs no database: `transitionStatus`
+reaches Mongo only through `AuditLog.create`, which the suite replaces, so
+it can assert on exactly what would have been written. Run this one
+constantly.
+
+`npm run test:integration` covers persistence — that audit rows actually
+save and read back through the real query paths. It needs a MongoDB on
+`INTEGRATION_MONGODB_URI` (default `mongodb://127.0.0.1:27017/tcams-integration`).
+CI supplies one as a service container; locally, point it at any Mongo you
+have, or skip it, since the fast suite covers the business logic.
+
 ## 4. Run the app
 
 In one terminal, start the backend:

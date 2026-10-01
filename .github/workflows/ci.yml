@@ -11,6 +11,20 @@ jobs:
     name: Backend Tests
     runs-on: ubuntu-latest
 
+    # A service container rather than mongodb-memory-server: that package
+    # downloads a mongod binary at test time, which adds a network
+    # dependency and is blocked on some networks. This is deterministic.
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,9 +43,15 @@ jobs:
         working-directory: ./server
         run: npm test
         env:
-          MONGODB_URI: mongodb://localhost:27017/tcams-test
           JWT_SECRET: test-secret
           NODE_ENV: test
+
+      - name: Run integration tests
+        working-directory: ./server
+        run: npm run test:integration
+        env:
+          INTEGRATION_MONGODB_URI: mongodb://localhost:27017/tcams-integration
+          JWT_SECRET: test-secret
 
   frontend-build:
     name: Frontend Build Check
