@@ -14,6 +14,11 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.CLIENT_URL = 'https://t-cams-frontend.example.com';
 
 const { test, before, after } = require('node:test');
+
+// No database in this suite. Without this, the valid-token test waits out
+// Mongoose's 10s buffering timeout instead of failing at the DB boundary
+// immediately - same assertion, ~10s faster.
+require('mongoose').set('bufferCommands', false);
 const assert = require('node:assert');
 const jwt = require('jsonwebtoken');
 
