@@ -1,12 +1,44 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import {
+  Boxes,
+  Briefcase,
+  Building2,
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Landmark,
+  Library,
+  Receipt,
+  ShieldCheck,
+  ShoppingCart,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import cn from '../../utils/cn';
 import { moduleGroups, getModulesForGroup } from '../../config/moduleConfig';
 import { useAuth } from '../../context/AuthContext';
-import { IconChevronDown, IconHome, IconLayers, IconLogOut, IconShield } from '../ui/icons';
-import Button from '../ui/Button';
 
 const COLLAPSED_STORAGE_KEY = 'tcams_collapsed_groups';
+
+// One icon per module group, so the rail reads as sections rather than a
+// uniform list. Keys match moduleConfig.js moduleGroups.
+const GROUP_ICONS = {
+  procurement: ShoppingCart,
+  academic: GraduationCap,
+  hrCore: Users,
+  asset: Boxes,
+  studentFinance: Receipt,
+  facilities: Building2,
+  library: Library,
+  department: Briefcase,
+  budget: Landmark,
+  finance: Wallet,
+  hrAdmin: Users,
+};
 
 function readCollapsedGroups() {
   try {
@@ -20,21 +52,18 @@ function readCollapsedGroups() {
 function initials(name, email) {
   const source = (name || email || '?').trim();
   const parts = source.split(/[\s@._-]+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return source.slice(0, 2).toUpperCase();
 }
 
 /**
- * Navigation for every module the signed-in role can reach.
+ * Navigation rail.
  *
- * Group visibility still comes from moduleGroups + hasRole() exactly as
- * before; only the presentation changed. Collapsed groups persist per viewer,
- * and the group containing the active route is always expanded so the current
- * page is never hidden.
+ * Group visibility still comes from moduleGroups + hasRole() unchanged; only
+ * the presentation is new. Collapsed groups persist per viewer, and the group
+ * holding the active route always stays open so the current page is reachable.
  */
-export default function Sidebar({ onNavigate }) {
+export default function Sidebar({ onNavigate, isRailCollapsed = false, onToggleRail }) {
   const { user, logout, hasRole } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(readCollapsedGroups);
@@ -54,7 +83,9 @@ export default function Sidebar({ onNavigate }) {
 
   const activeGroupKey = useMemo(() => {
     if (!activeModuleKey) return null;
-    return visibleGroups.find((group) => group.modules.some((module) => module.key === activeModuleKey))?.key ?? null;
+    return (
+      visibleGroups.find((group) => group.modules.some((m) => m.key === activeModuleKey))?.key ?? null
+    );
   }, [activeModuleKey, visibleGroups]);
 
   useEffect(() => {
@@ -66,128 +97,208 @@ export default function Sidebar({ onNavigate }) {
   }, [collapsed]);
 
   function toggleGroup(key) {
-    setCollapsed((prev) => (prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]));
+    setCollapsed((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-slate-900">
-      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-slate-200 px-5 dark:border-slate-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-600 text-white">
-          <IconShield className="h-4 w-4" />
+      {/* Brand + rail collapse */}
+      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-gray-200 px-4 dark:border-slate-800">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-brand-500 text-white">
+          <ShieldCheck className="h-[18px] w-[18px]" strokeWidth={2} />
         </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">T-CAMS</p>
-          <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">Compliance &amp; Administration</p>
-        </div>
+        {!isRailCollapsed && (
+          <>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
+                T-CAMS
+              </p>
+              <p className="truncate text-[11px] text-gray-500 dark:text-slate-400">
+                Compliance Suite
+              </p>
+            </div>
+            {onToggleRail && (
+              <button
+                type="button"
+                onClick={onToggleRail}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+                className="hidden shrink-0 rounded-md p-1.5 text-gray-400 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:block"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+            )}
+          </>
+        )}
       </div>
 
-      <nav className="scrollbar-slim flex-1 space-y-1 overflow-y-auto px-3 py-4" aria-label="Main navigation">
+      {isRailCollapsed && onToggleRail && (
+        <button
+          type="button"
+          onClick={onToggleRail}
+          aria-label="Expand sidebar"
+          title="Expand sidebar"
+          className="mx-auto mt-3 rounded-md p-1.5 text-gray-400 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      )}
+
+      <nav
+        className="scrollbar-slim flex-1 overflow-y-auto px-3 py-4"
+        aria-label="Main navigation"
+      >
+        <p
+          className={cn(
+            'px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500',
+            isRailCollapsed && 'text-center',
+          )}
+        >
+          {isRailCollapsed ? '•' : 'Main'}
+        </p>
+
         <NavLink
           to="/"
           end
           onClick={onNavigate}
+          title="Dashboard"
           className={({ isActive }) =>
             cn(
               'flex items-center gap-2.5 rounded-control px-3 py-2 text-sm font-medium transition-colors duration-200',
+              isRailCollapsed && 'justify-center px-0',
               isActive
-                ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                ? 'bg-brand-500 text-white shadow-subtle'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
             )
           }
         >
-          <IconHome className="h-4 w-4 shrink-0" />
-          Dashboard
+          <LayoutDashboard className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+          {!isRailCollapsed && 'Dashboard'}
         </NavLink>
 
-        {visibleGroups.map((group) => {
-          const isCollapsed = collapsed.includes(group.key) && group.key !== activeGroupKey;
-          const panelId = `nav-group-${group.key}`;
+        {!isRailCollapsed && (
+          <p className="px-2 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
+            Modules
+          </p>
+        )}
 
-          return (
-            <div key={group.key} className="pt-2">
-              <button
-                type="button"
-                onClick={() => toggleGroup(group.key)}
-                aria-expanded={!isCollapsed}
-                aria-controls={panelId}
-                className="flex w-full items-center justify-between gap-2 rounded-control px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 transition-colors duration-200 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-              >
-                <span className="truncate">{group.label}</span>
-                <IconChevronDown
+        <div className={cn('space-y-0.5', isRailCollapsed && 'mt-4 space-y-1')}>
+          {visibleGroups.map((group) => {
+            const GroupIcon = GROUP_ICONS[group.key] || Boxes;
+            const isCollapsed = collapsed.includes(group.key) && group.key !== activeGroupKey;
+            const panelId = `nav-group-${group.key}`;
+            const groupHasActive = group.key === activeGroupKey;
+
+            // Collapsed rail: one icon per group linking to its first module.
+            if (isRailCollapsed) {
+              return (
+                <NavLink
+                  key={group.key}
+                  to={`/modules/${group.modules[0].key}`}
+                  onClick={onNavigate}
+                  title={group.label}
                   className={cn(
-                    'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
-                    isCollapsed && '-rotate-90',
+                    'flex items-center justify-center rounded-control py-2 transition-colors duration-200',
+                    groupHasActive
+                      ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400'
+                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800',
                   )}
-                />
-              </button>
+                >
+                  <GroupIcon className="h-[18px] w-[18px]" strokeWidth={2} />
+                </NavLink>
+              );
+            }
 
-              <div
-                id={panelId}
-                className={cn(
-                  'grid transition-all duration-200 ease-out',
-                  isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
-                )}
-              >
-                <ul className="overflow-hidden">
-                  {group.modules.map((module) => (
-                    <li key={module.key}>
-                      <NavLink
-                        to={`/modules/${module.key}`}
-                        onClick={onNavigate}
-                        className={({ isActive }) =>
-                          cn(
-                            'group flex items-center gap-2.5 rounded-control py-2 pl-3 pr-3 text-sm transition-colors duration-200',
-                            isActive
-                              ? 'bg-brand-50 font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-300'
-                              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
-                          )
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            <span
-                              className={cn(
-                                'h-4 w-0.5 shrink-0 rounded-full transition-colors duration-200',
-                                isActive ? 'bg-brand-600 dark:bg-brand-400' : 'bg-transparent',
-                              )}
-                            />
-                            <IconLayers className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                            <span className="truncate">{module.label}</span>
-                          </>
-                        )}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
+            return (
+              <div key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  aria-expanded={!isCollapsed}
+                  aria-controls={panelId}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 rounded-control px-3 py-2 text-sm font-medium transition-colors duration-200',
+                    'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                  )}
+                >
+                  <GroupIcon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+                  <span className="min-w-0 flex-1 truncate text-left">{group.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200',
+                      isCollapsed && '-rotate-90',
+                    )}
+                  />
+                </button>
+
+                {/* Nested items: indented, with a hairline rail showing hierarchy. */}
+                <div
+                  id={panelId}
+                  className={cn(
+                    'grid transition-all duration-200 ease-out',
+                    isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100',
+                  )}
+                >
+                  <ul className="ml-[22px] overflow-hidden border-l border-gray-200 pl-2 dark:border-slate-800">
+                    {group.modules.map((module) => (
+                      <li key={module.key}>
+                        <NavLink
+                          to={`/modules/${module.key}`}
+                          onClick={onNavigate}
+                          className={({ isActive }) =>
+                            cn(
+                              'my-0.5 block truncate rounded-control px-3 py-[7px] text-[13px] transition-colors duration-200',
+                              isActive
+                                ? 'bg-brand-500 font-medium text-white shadow-subtle'
+                                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
+                            )
+                          }
+                        >
+                          {module.label}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </nav>
 
-      <div className="shrink-0 border-t border-slate-200 p-3 dark:border-slate-800">
-        <div className="flex items-center gap-3 rounded-control px-2 py-2">
+      {/* User profile */}
+      <div className="shrink-0 border-t border-gray-200 p-3 dark:border-slate-800">
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-control px-2 py-1.5',
+            isRailCollapsed && 'justify-center px-0',
+          )}
+        >
           <span
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-600 ring-1 ring-brand-100 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-500/20"
             aria-hidden="true"
           >
             {initials(user?.name, user?.email)}
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-              {user?.name || 'Signed in'}
-            </p>
-            <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{user?.email}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            iconOnly
-            leadingIcon={IconLogOut}
-            onClick={logout}
-            aria-label="Log out"
-            title="Log out"
-          />
+          {!isRailCollapsed && (
+            <>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium text-gray-900 dark:text-white">
+                  {user?.name || 'Signed in'}
+                </p>
+                <p className="truncate text-[11px] text-gray-500 dark:text-slate-400">{user?.email}</p>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                aria-label="Log out"
+                title="Log out"
+                className="shrink-0 rounded-md p-1.5 text-gray-400 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

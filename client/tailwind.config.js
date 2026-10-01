@@ -19,50 +19,45 @@ export default {
         ],
       },
       colors: {
-        // Deep indigo primary. 600 is the light-mode action colour; 500 is the
-        // dark-mode step (validated >=3:1 against a dark surface, where 600
-        // falls to 2.77:1).
+        // Primary: bright professional blue, per the ERP reference. 500 is the
+        // active/fill step (solid blue sidebar item, primary button); 600 is
+        // the text-on-white step, which clears 4.5:1 where 500 does not.
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
         },
       },
-      // 8px spacing system: the default Tailwind scale is already 4px-based,
-      // so these are the half-steps it lacks rather than a replacement scale.
       spacing: {
         4.5: '1.125rem',
         18: '4.5rem',
         88: '22rem',
       },
       borderRadius: {
-        // Cards 8-12px, buttons/inputs 6-8px.
-        card: '0.75rem',
-        control: '0.5rem',
+        card: '0.75rem', // 12px - cards
+        control: '0.5rem', // 8px - buttons, inputs, nav items
       },
       boxShadow: {
-        // Layered rather than a single blur, so elevation reads at small sizes.
-        subtle: '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)',
-        card: '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 2px 8px -2px rgb(15 23 42 / 0.08)',
-        overlay: '0 10px 15px -3px rgb(15 23 42 / 0.12), 0 4px 6px -4px rgb(15 23 42 / 0.10)',
-        focus: '0 0 0 3px rgb(79 70 229 / 0.35)',
+        // Deliberately soft. The reference leans on 1px borders for
+        // definition and uses shadow only to lift a surface a little.
+        subtle: '0 1px 2px 0 rgb(16 24 40 / 0.04)',
+        card: '0 1px 2px 0 rgb(16 24 40 / 0.05), 0 1px 3px 0 rgb(16 24 40 / 0.04)',
+        overlay: '0 12px 16px -4px rgb(16 24 40 / 0.08), 0 4px 6px -2px rgb(16 24 40 / 0.03)',
+        focus: '0 0 0 3px rgb(59 130 246 / 0.35)',
       },
       transitionDuration: {
         DEFAULT: '200ms',
       },
       keyframes: {
-        'fade-in': {
-          from: { opacity: '0' },
-          to: { opacity: '1' },
-        },
+        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
         'scale-in': {
           from: { opacity: '0', transform: 'translateY(4px) scale(0.98)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
