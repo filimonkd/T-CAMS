@@ -4,7 +4,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Modal from '../ui/Modal';
 import { useToast } from '../ui/Toast';
-import { IconAlertCircle } from '../ui/icons';
+import { AlertCircle } from 'lucide-react';
 
 // moduleConfig declares variants as success/danger/neutral; map them onto the
 // shared Button variants without changing any config.
@@ -95,7 +95,7 @@ export default function ApprovalAction({ action, recordId, onDone }) {
             role="alert"
             className="mb-4 flex items-start gap-2.5 rounded-control border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
           >
-            <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p className="min-w-0 break-words">{error}</p>
           </div>
         )}

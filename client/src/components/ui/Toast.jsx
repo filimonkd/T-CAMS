@@ -1,25 +1,25 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import cn from '../../utils/cn';
-import { IconAlertCircle, IconAlertTriangle, IconCheckCircle, IconInfo, IconX } from './icons';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
 const TONES = {
   success: {
-    icon: IconCheckCircle,
+    icon: CheckCircle2,
     accent: 'text-emerald-600 dark:text-emerald-400',
   },
   error: {
-    icon: IconAlertCircle,
+    icon: AlertCircle,
     accent: 'text-red-600 dark:text-red-400',
   },
   warning: {
-    icon: IconAlertTriangle,
+    icon: AlertTriangle,
     accent: 'text-amber-600 dark:text-amber-400',
   },
   info: {
-    icon: IconInfo,
+    icon: Info,
     accent: 'text-sky-600 dark:text-sky-400',
   },
 };
@@ -75,21 +75,21 @@ export function ToastProvider({ children }) {
                 role="status"
                 aria-live="polite"
                 className={cn(
-                  'pointer-events-auto flex items-start gap-3 rounded-card border border-slate-200 bg-white p-3.5 shadow-overlay',
+                  'pointer-events-auto flex items-start gap-3 rounded-card border border-gray-200 bg-white p-3.5 shadow-overlay',
                   'animate-slide-in-right dark:border-slate-800 dark:bg-slate-900',
                 )}
               >
                 <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', tone.accent)} />
-                <p className="min-w-0 flex-1 break-words text-sm text-slate-700 dark:text-slate-200">
+                <p className="min-w-0 flex-1 break-words text-sm text-gray-700 dark:text-slate-200">
                   {toast.message}
                 </p>
                 <button
                   type="button"
                   onClick={() => dismiss(toast.id)}
                   aria-label="Dismiss notification"
-                  className="shrink-0 rounded text-slate-400 transition-colors duration-200 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="shrink-0 rounded text-gray-400 transition-colors duration-200 hover:text-gray-600 dark:hover:text-slate-200"
                 >
-                  <IconX className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             );

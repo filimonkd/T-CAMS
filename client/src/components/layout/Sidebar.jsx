@@ -167,7 +167,7 @@ export default function Sidebar({ onNavigate, isRailCollapsed = false, onToggleR
               'flex items-center gap-2.5 rounded-control px-3 py-2 text-sm font-medium transition-colors duration-200',
               isRailCollapsed && 'justify-center px-0',
               isActive
-                ? 'bg-brand-500 text-white shadow-subtle'
+                ? 'bg-brand-600 text-white shadow-subtle'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
             )
           }
@@ -249,7 +249,7 @@ export default function Sidebar({ onNavigate, isRailCollapsed = false, onToggleR
                             cn(
                               'my-0.5 block truncate rounded-control px-3 py-[7px] text-[13px] transition-colors duration-200',
                               isActive
-                                ? 'bg-brand-500 font-medium text-white shadow-subtle'
+                                ? 'bg-brand-600 font-medium text-white shadow-subtle'
                                 : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white',
                             )
                           }

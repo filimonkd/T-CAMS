@@ -5,11 +5,11 @@ const VARIANTS = {
   primary:
     'bg-brand-600 text-white shadow-subtle hover:bg-brand-700 active:bg-brand-800 dark:bg-brand-500 dark:hover:bg-brand-600',
   secondary:
-    'bg-slate-900 text-white shadow-subtle hover:bg-slate-800 active:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
+    'bg-gray-900 text-white shadow-subtle hover:bg-gray-800 active:bg-gray-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
   outline:
-    'border border-slate-300 bg-white text-slate-700 shadow-subtle hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white',
+    'border border-gray-300 bg-white text-gray-700 shadow-subtle hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white',
   ghost:
-    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+    'text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
   danger:
     'bg-red-600 text-white shadow-subtle hover:bg-red-700 active:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500',
   success:
