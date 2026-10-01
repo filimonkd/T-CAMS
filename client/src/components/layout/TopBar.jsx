@@ -1,50 +1,56 @@
+import { Bell, Menu, Search } from 'lucide-react';
 import Breadcrumbs from './Breadcrumbs';
 import ThemeToggle from './ThemeToggle';
-import Button from '../ui/Button';
-import Badge from '../ui/Badge';
-import { IconBell, IconMenu } from '../ui/icons';
-import { useAuth } from '../../context/AuthContext';
 
-export default function TopBar({ onOpenSidebar }) {
-  const { user } = useAuth();
-
+/**
+ * Header: breadcrumbs on the left, icon actions on the right, matching the
+ * reference. White surface with a hairline bottom border.
+ */
+export default function TopBar({ onOpenSidebar, title }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80 sm:px-6">
-      <Button
-        variant="ghost"
-        size="sm"
-        iconOnly
-        leadingIcon={IconMenu}
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+      <button
+        type="button"
         onClick={onOpenSidebar}
         aria-label="Open navigation"
-        className="lg:hidden"
-      />
+        className="-ml-1 shrink-0 rounded-control p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-400 dark:hover:bg-slate-800 lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
 
       <div className="min-w-0 flex-1">
+        {title && (
+          <p className="truncate text-[15px] font-semibold leading-tight text-gray-900 dark:text-white">
+            {title}
+          </p>
+        )}
         <Breadcrumbs />
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
-        {user?.role && (
-          <Badge tone="brand" className="mr-1 hidden sm:inline-flex">
-            {user.role.replace(/_/g, ' ')}
-          </Badge>
-        )}
+      <div className="flex shrink-0 items-center gap-2">
         <ThemeToggle />
+        <button
+          type="button"
+          aria-label="Search"
+          title="Search"
+          className="rounded-control border border-gray-200 p-2 text-gray-500 transition-colors duration-200 hover:bg-gray-50 hover:text-gray-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+        >
+          <Search className="h-[18px] w-[18px]" />
+        </button>
         {/*
-          There is no notifications endpoint in the API, so this opens nothing
-          and deliberately shows no unread count - a badge here would be
-          invented data. Wire it up when a notifications resource exists.
+          Disabled on purpose: the API exposes no notifications resource, so
+          there is nothing to open and no unread count that would not be
+          invented. Enable once such an endpoint exists.
         */}
-        <Button
-          variant="ghost"
-          size="sm"
-          iconOnly
-          leadingIcon={IconBell}
+        <button
+          type="button"
+          disabled
           aria-label="Notifications (none available)"
           title="Notifications are not available yet"
-          disabled
-        />
+          className="rounded-control border border-gray-200 p-2 text-gray-400 opacity-60 dark:border-slate-700 dark:text-slate-500"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+        </button>
       </div>
     </header>
   );
