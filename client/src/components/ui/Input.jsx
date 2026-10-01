@@ -2,10 +2,10 @@ import { useId } from 'react';
 import cn from '../../utils/cn';
 
 const CONTROL_BASE =
-  'w-full rounded-control border bg-white px-3 text-sm text-slate-900 shadow-subtle transition-colors duration-200 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:disabled:bg-slate-800';
+  'w-full rounded-control border bg-white px-3 text-sm text-gray-900 shadow-subtle transition-colors duration-200 placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:disabled:bg-slate-800';
 
 const CONTROL_BORDER =
-  'border-slate-300 focus:border-brand-600 dark:border-slate-700 dark:focus:border-brand-500';
+  'border-gray-300 focus:border-brand-600 dark:border-slate-700 dark:focus:border-brand-500';
 
 const CONTROL_BORDER_ERROR = 'border-red-400 focus:border-red-500 dark:border-red-500/70';
 
@@ -14,7 +14,7 @@ export function Field({ id, label, hint, error, required, children, className })
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
-        <label htmlFor={id} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-slate-300">
           {label}
           {required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
@@ -26,7 +26,7 @@ export function Field({ id, label, hint, error, required, children, className })
         </p>
       ) : (
         hint && (
-          <p id={`${id}-hint`} className="text-xs text-slate-500 dark:text-slate-400">
+          <p id={`${id}-hint`} className="text-xs text-gray-500 dark:text-slate-400">
             {hint}
           </p>
         )

@@ -19,18 +19,18 @@ export default function StatCard({ label, value, hint, icon: Icon, tone = 'brand
     <Card className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="truncate text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400">
             {label}
           </p>
           {isLoading ? (
             <Skeleton className="mt-2 h-8 w-16" />
           ) : (
-            <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
+            <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-gray-900 dark:text-white">
               {value}
             </p>
           )}
           {hint && !isLoading && (
-            <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+            <p className="mt-1 truncate text-xs text-gray-500 dark:text-slate-400">{hint}</p>
           )}
         </div>
         {Icon && (

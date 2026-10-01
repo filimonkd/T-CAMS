@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import cn from '../../utils/cn';
 import Button from './Button';
-import { IconX } from './icons';
+import { X } from 'lucide-react';
 
 const SIZES = {
   sm: 'max-w-sm',
@@ -54,7 +54,7 @@ export default function Modal({ isOpen, onClose, title, description, footer, siz
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-slate-900/40 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-gray-900/40 p-0 backdrop-blur-sm animate-fade-in sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
@@ -73,25 +73,25 @@ export default function Modal({ isOpen, onClose, title, description, footer, siz
         )}
       >
         {(title || onClose) && (
-          <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-slate-800">
             <div className="min-w-0">
               {title && (
-                <h2 id="modal-title" className="text-sm font-semibold text-slate-900 dark:text-white">
+                <h2 id="modal-title" className="text-sm font-semibold text-gray-900 dark:text-white">
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">{description}</p>
               )}
             </div>
-            <Button variant="ghost" size="sm" iconOnly leadingIcon={IconX} onClick={onClose} aria-label="Close dialog" />
+            <Button variant="ghost" size="sm" iconOnly leadingIcon={X} onClick={onClose} aria-label="Close dialog" />
           </div>
         )}
 
         <div className="px-5 py-4">{children}</div>
 
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-slate-800">
             {footer}
           </div>
         )}
