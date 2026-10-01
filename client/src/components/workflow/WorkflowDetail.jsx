@@ -1,27 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  Clock,
+  FileText,
+  History,
+  Info,
+  RefreshCw,
+  ShieldCheck,
+  Zap,
+} from 'lucide-react';
 import api, { getErrorMessage } from '../../api/axios';
 import { moduleConfig } from '../../config/moduleConfig';
 import StatusBadge from './StatusBadge';
 import ApprovalAction from './ApprovalAction';
-import Button from '../ui/Button';
-import Card, { CardBody, CardHeader, CardTitle } from '../ui/Card';
+import DetailCard, { DetailGrid, DetailItem, Toggle } from '../ui/DetailCard';
+import MetricCard from '../ui/MetricCard';
+import DataTable from '../ui/DataTable';
+import Tabs, { TabPanel } from '../ui/Tabs';
 import EmptyState from '../ui/EmptyState';
 import Skeleton from '../ui/Skeleton';
-import Badge from '../ui/Badge';
-import {
-  IconAlertCircle,
-  IconArrowRight,
-  IconChevronLeft,
-  IconClock,
-  IconRefresh,
-  IconShield,
-} from '../ui/icons';
+import Button from '../ui/Button';
 
-// Fields that are plumbing rather than record content.
+// Plumbing rather than record content.
 const HIDDEN_FIELDS = ['__v', '_id', 'status'];
-
 const DATE_FIELD = /(At|Date)$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function humanizeKey(key) {
   return key
@@ -31,33 +38,27 @@ function humanizeKey(key) {
 }
 
 function formatValue(key, value) {
-  if (value === null || value === undefined || value === '') {
-    return '-';
-  }
+  if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'object') {
-    if (value.name || value.code || value.title) {
-      return value.name || value.code || value.title;
-    }
-    return JSON.stringify(value);
+    return value.name || value.code || value.title || JSON.stringify(value);
   }
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No';
-  }
-  // Mongo returns ISO strings; render them in the viewer's locale.
   if (DATE_FIELD.test(key) && typeof value === 'string') {
     const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleString();
-    }
+    if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleString();
   }
   return String(value);
 }
 
 /**
- * Generic detail view for any module/entity - fetches the record plus its
- * complete AuditLog history from GET /api/audit/:entityType/:entityId,
- * renders every field generically, and exposes whatever workflow actions the
- * module declares.
+ * Generic detail view for every module/entity - fetches the record plus its
+ * AuditLog history from GET /api/audit/:entityType/:entityId, then lays it
+ * out in the ERP reference pattern: a details card, derived metrics, and a
+ * tabbed panel.
+ *
+ * This is deliberately the one generic page rather than a bespoke per-entity
+ * screen: routes.jsx maps /modules/:moduleKey/:id here for all 44 entities,
+ * so the pattern lands on every detail page at once (Learners included)
+ * instead of only one.
  */
 export default function WorkflowDetail({ moduleKey }) {
   const { id } = useParams();
@@ -66,11 +67,10 @@ export default function WorkflowDetail({ moduleKey }) {
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('details');
 
   const load = useCallback(async () => {
-    if (!config) {
-      return;
-    }
+    if (!config) return;
     setIsLoading(true);
     setError('');
     try {
@@ -91,163 +91,262 @@ export default function WorkflowDetail({ moduleKey }) {
     load();
   }, [load]);
 
+  // Split the record into booleans (rendered as toggles) and everything else.
+  const { flagFields, valueFields } = useMemo(() => {
+    if (!record) return { flagFields: [], valueFields: [] };
+    const flags = [];
+    const values = [];
+    for (const [key, value] of Object.entries(record)) {
+      if (HIDDEN_FIELDS.includes(key)) continue;
+      if (typeof value === 'boolean') flags.push([key, value]);
+      else values.push([key, value]);
+    }
+    return { flagFields: flags, valueFields: values };
+  }, [record]);
+
+  const metrics = useMemo(() => {
+    if (!record) return null;
+    const created = record.createdAt ? new Date(record.createdAt) : null;
+    const ageDays =
+      created && !Number.isNaN(created.getTime())
+        ? Math.max(0, Math.floor((Date.now() - created.getTime()) / DAY_MS))
+        : null;
+
+    const latest = history.length ? new Date(history[history.length - 1].occurredAt) : null;
+    const daysInStatus =
+      latest && !Number.isNaN(latest.getTime())
+        ? Math.max(0, Math.floor((Date.now() - latest.getTime()) / DAY_MS))
+        : null;
+
+    return { transitions: history.length, ageDays, daysInStatus };
+  }, [record, history]);
+
+  const historyColumns = useMemo(
+    () => [
+      {
+        key: 'transition',
+        label: 'Transition',
+        render: (row) => (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge status={row.fromStatus} size="sm" />
+            <ArrowRight className="h-3 w-3 shrink-0 text-gray-400" />
+            <StatusBadge status={row.toStatus} size="sm" />
+          </span>
+        ),
+      },
+      {
+        key: 'useCaseCode',
+        label: 'Use Case',
+        render: (row) =>
+          row.useCaseCode ? (
+            <span className="font-mono text-xs text-gray-500 dark:text-slate-400">{row.useCaseCode}</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
+      },
+      {
+        key: 'isoClause',
+        label: 'ISO Clause',
+        render: (row) =>
+          row.isoClause ? (
+            <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
+              <ShieldCheck className="h-3 w-3" />
+              {row.isoClause}
+            </span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
+      },
+      {
+        key: 'occurredAt',
+        label: 'Occurred',
+        align: 'right',
+        render: (row) => (
+          <span className="whitespace-nowrap text-xs text-gray-500 dark:text-slate-400">
+            {new Date(row.occurredAt).toLocaleString()}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   if (!config) {
     return (
-      <Card>
-        <EmptyState icon={IconAlertCircle} title="Unknown module" description={`No configuration exists for "${moduleKey}".`} />
-      </Card>
+      <DetailCard icon={AlertCircle} title="Unknown module">
+        <EmptyState
+          icon={AlertCircle}
+          title="Unknown module"
+          description={`No configuration exists for "${moduleKey}".`}
+        />
+      </DetailCard>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         <Skeleton className="h-8 w-64" />
-        <Card>
-          <CardBody className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {Array.from({ length: 6 }).map((_, index) => (
+        <div className="rounded-card border border-gray-200 bg-white p-5 shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
               <div key={index} className="space-y-2">
                 <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-32" />
               </div>
             ))}
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="space-y-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-4 w-full" />
-            ))}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-28 w-full rounded-card" />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
+      <DetailCard icon={AlertCircle} title="Could not load record">
         <EmptyState
-          icon={IconAlertCircle}
+          icon={AlertCircle}
           title="Could not load this record"
           description={error}
           action={
-            <Button variant="outline" leadingIcon={IconRefresh} onClick={load}>
+            <Button variant="outline" leadingIcon={RefreshCw} onClick={load}>
               Try again
             </Button>
           }
         />
-      </Card>
+      </DetailCard>
     );
   }
 
-  if (!record) {
-    return null;
-  }
+  if (!record) return null;
 
-  const fields = Object.entries(record).filter(([key]) => !HIDDEN_FIELDS.includes(key));
+  const tabs = [
+    { key: 'details', label: 'Details', count: valueFields.length },
+    { key: 'history', label: 'Approval History', count: history.length },
+    ...(config.actions.length > 0
+      ? [{ key: 'actions', label: 'Actions', count: config.actions.length }]
+      : []),
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <Link
           to={`/modules/${moduleKey}`}
-          className="mb-3 inline-flex items-center gap-1 rounded text-sm text-slate-500 transition-colors duration-200 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          className="mb-2.5 inline-flex items-center gap-1 rounded text-[13px] text-gray-500 transition-colors duration-200 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
         >
-          <IconChevronLeft className="h-3.5 w-3.5" />
+          <ChevronLeft className="h-3.5 w-3.5" />
           Back to {config.label}
         </Link>
 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
               {record.code || record.name || record.title || config.label}
             </h1>
-            <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{record._id}</p>
+            <p className="mt-0.5 font-mono text-xs text-gray-500 dark:text-slate-400">{record._id}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <StatusBadge status={record.status} />
-            <Button variant="ghost" size="sm" iconOnly leadingIcon={IconRefresh} onClick={load} aria-label="Reload record" />
+            <Button variant="outline" size="sm" iconOnly leadingIcon={RefreshCw} onClick={load} aria-label="Reload record" />
           </div>
         </div>
       </div>
 
-      {config.actions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Available actions</CardTitle>
-          </CardHeader>
-          <CardBody className="flex flex-wrap gap-2">
-            {config.actions.map((action) => (
-              <ApprovalAction key={action.key} action={action} recordId={id} onDone={load} />
-            ))}
-          </CardBody>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Record details</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-            {fields.map(([key, value]) => (
-              <div key={key} className="min-w-0">
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                  {humanizeKey(key)}
-                </dt>
-                <dd className="mt-1 break-words text-sm text-slate-800 dark:text-slate-200">
-                  {formatValue(key, value)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Approval history</CardTitle>
-        </CardHeader>
-        {history.length === 0 ? (
-          <EmptyState
-            icon={IconClock}
-            title="No recorded history yet"
-            description="Status transitions appear here once this record moves through its workflow."
-          />
-        ) : (
-          <CardBody>
-            <ol className="relative space-y-5 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-px before:bg-slate-200 dark:before:bg-slate-800">
-              {history.map((entry) => (
-                <li key={entry._id} className="relative pl-7">
-                  <span
-                    className="absolute left-0 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-white bg-brand-500 ring-1 ring-brand-200 dark:border-slate-900 dark:ring-brand-500/30"
-                    aria-hidden="true"
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={entry.fromStatus} size="sm" />
-                    <IconArrowRight className="h-3 w-3 text-slate-400" />
-                    <StatusBadge status={entry.toStatus} size="sm" />
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="inline-flex items-center gap-1">
-                      <IconClock className="h-3 w-3" />
-                      {new Date(entry.occurredAt).toLocaleString()}
-                    </span>
-                    {entry.useCaseCode && <span className="font-mono">{entry.useCaseCode}</span>}
-                    {entry.isoClause && (
-                      <Badge tone="neutral" size="sm">
-                        <IconShield className="h-3 w-3" />
-                        ISO {entry.isoClause}
-                      </Badge>
-                    )}
-                  </div>
-                </li>
+      {/* Row 1 - details card with key/value grid and flag toggles */}
+      <DetailCard icon={FileText} title={`${config.label} Details`}>
+        <div className="flex flex-col gap-6 lg:flex-row">
+          {flagFields.length > 0 && (
+            <div className="w-full shrink-0 space-y-2 lg:w-56">
+              {flagFields.map(([key, value]) => (
+                <Toggle key={key} id={`flag-${key}`} label={humanizeKey(key)} checked={value} readOnly />
               ))}
-            </ol>
-          </CardBody>
+              <p className="pt-1 text-[11px] leading-snug text-gray-400 dark:text-slate-500">
+                Read-only: the API exposes no endpoint to change these flags directly.
+              </p>
+            </div>
+          )}
+
+          <DetailGrid columns={flagFields.length > 0 ? 3 : 4} className="min-w-0 flex-1">
+            {valueFields.map(([key, value]) => (
+              <DetailItem
+                key={key}
+                icon={DATE_FIELD.test(key) ? CalendarDays : Info}
+                label={humanizeKey(key)}
+                value={formatValue(key, value)}
+              />
+            ))}
+          </DetailGrid>
+        </div>
+      </DetailCard>
+
+      {/* Row 2 - metrics derived from the record and its audit trail */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard
+          label="Recorded Transitions"
+          value={metrics.transitions.toLocaleString()}
+          hint="Entries in the audit log"
+        />
+        <MetricCard
+          label="Record Age"
+          value={metrics.ageDays === null ? '—' : `${metrics.ageDays}d`}
+          hint={metrics.ageDays === null ? 'No creation timestamp' : 'Since created'}
+        />
+        <MetricCard
+          label="Time in Current Status"
+          value={metrics.daysInStatus === null ? '—' : `${metrics.daysInStatus}d`}
+          hint={metrics.daysInStatus === null ? 'No transitions recorded' : 'Since last transition'}
+        />
+      </div>
+
+      {/* Row 3 - tabbed panel */}
+      <section className="rounded-card border border-gray-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+        <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} />
+
+        <TabPanel tabKey="details" value={activeTab}>
+          <div className="p-5">
+            <DetailGrid columns={3}>
+              {valueFields.map(([key, value]) => (
+                <DetailItem key={key} label={humanizeKey(key)} value={formatValue(key, value)} />
+              ))}
+            </DetailGrid>
+          </div>
+        </TabPanel>
+
+        <TabPanel tabKey="history" value={activeTab}>
+          <DataTable
+            columns={historyColumns}
+            rows={history}
+            emptyState={
+              <EmptyState
+                icon={History}
+                title="No recorded history yet"
+                description="Status transitions appear here once this record moves through its workflow."
+              />
+            }
+          />
+        </TabPanel>
+
+        {config.actions.length > 0 && (
+          <TabPanel tabKey="actions" value={activeTab}>
+            <div className="p-5">
+              <p className="mb-3 text-[13px] text-gray-500 dark:text-slate-400">
+                Workflow transitions available for this record. Guard rules are enforced server-side.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {config.actions.map((action) => (
+                  <ApprovalAction key={action.key} action={action} recordId={id} onDone={load} />
+                ))}
+              </div>
+            </div>
+          </TabPanel>
         )}
-      </Card>
+      </section>
     </div>
   );
 }

@@ -1,36 +1,36 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Activity,
+  AlertCircle,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  Layers,
+  RefreshCw,
+} from 'lucide-react';
 import api, { getErrorMessage } from '../api/axios';
 import { moduleGroups, getModulesForGroup, moduleConfig } from '../config/moduleConfig';
 import { useAuth } from '../context/AuthContext';
-import StatCard from '../components/dashboard/StatCard';
-import StatusBadge from '../components/workflow/StatusBadge';
-import Button from '../components/ui/Button';
-import Card, { CardBody, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import MetricCard from '../components/ui/MetricCard';
+import DataTable from '../components/ui/DataTable';
+import DetailCard from '../components/ui/DetailCard';
 import EmptyState from '../components/ui/EmptyState';
 import Skeleton from '../components/ui/Skeleton';
-import Badge from '../components/ui/Badge';
-import {
-  IconActivity,
-  IconAlertCircle,
-  IconArrowRight,
-  IconCheckCircle,
-  IconClock,
-  IconLayers,
-  IconRefresh,
-  IconShield,
-} from '../components/ui/icons';
+import Button from '../components/ui/Button';
+import StatusBadge from '../components/workflow/StatusBadge';
 
-// Recharts is by far the heaviest dependency in the app and this chart is the
-// only thing using it, so it loads as its own chunk instead of blocking first
-// paint. The Suspense fallback matches the chart's height, so nothing shifts.
+// Recharts is the heaviest dependency here and only this chart uses it, so it
+// loads as its own chunk rather than blocking first paint.
 const ActivityChart = lazy(() => import('../components/dashboard/ActivityChart'));
 
 const ACTIVITY_DAYS = 14;
 const RECENT_LIMIT = 8;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Terminal "this finished successfully" states, matching StatusBadge's
-// success tone - used only to count, never to infer anything not in the log.
+// Terminal "finished successfully" states, matching StatusBadge's success
+// tone - used only to count, never to infer anything absent from the log.
 const SUCCESS_STATES = new Set([
   'APPROVED', 'ACTIVE', 'CLEARED', 'FINALIZED', 'COMPLETED',
   'ACKNOWLEDGED', 'FULFILLED', 'AWARDED', 'PAID',
@@ -59,8 +59,7 @@ function buildActivitySeries(entries, days) {
   for (const entry of entries) {
     const occurred = new Date(entry.occurredAt);
     if (Number.isNaN(occurred.getTime())) continue;
-    const key = startOfDay(occurred).getTime();
-    const bucket = buckets.get(key);
+    const bucket = buckets.get(startOfDay(occurred).getTime());
     if (bucket) bucket.count += 1;
   }
 
@@ -68,13 +67,15 @@ function buildActivitySeries(entries, days) {
 }
 
 /**
- * Every figure here is derived from data the API actually returns:
+ * Every figure comes from data the API actually returns:
  * GET /api/audit/compliance (the AuditLog) for activity, plus the role-gated
- * module registry for reach. Nothing is mocked or padded - when the log is
- * empty the cards read zero and the panels show empty states.
+ * module registry for reach. Nothing is mocked - an empty log renders zeros
+ * and empty states rather than placeholder numbers, and a trend pill only
+ * appears where a real prior-period baseline exists in the log.
  */
 export default function Dashboard() {
   const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -112,43 +113,111 @@ export default function Dashboard() {
   }, [loadActivity]);
 
   const stats = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    let lastWeek = 0;
+    const now = Date.now();
+    let thisWeek = 0;
+    let priorWeek = 0;
     let completions = 0;
     const entityTypes = new Set();
 
     for (const entry of entries) {
-      if (new Date(entry.occurredAt).getTime() >= weekAgo) lastWeek += 1;
+      const at = new Date(entry.occurredAt).getTime();
+      if (at >= now - WEEK_MS) thisWeek += 1;
+      else if (at >= now - 2 * WEEK_MS) priorWeek += 1;
       if (SUCCESS_STATES.has(entry.toStatus)) completions += 1;
       if (entry.entityType) entityTypes.add(entry.entityType);
     }
 
-    return { total: entries.length, lastWeek, completions, entityTypes: entityTypes.size };
+    // Only a real prior week supports a delta. With no baseline there is no
+    // percentage to show, so the card renders without a trend pill.
+    const weekTrend =
+      priorWeek > 0 ? Math.round(((thisWeek - priorWeek) / priorWeek) * 100) : null;
+
+    return {
+      total: entries.length,
+      thisWeek,
+      priorWeek,
+      weekTrend,
+      completions,
+      completionRate: entries.length ? Math.round((completions / entries.length) * 100) : 0,
+      entityTypes: entityTypes.size,
+    };
   }, [entries]);
 
   const activitySeries = useMemo(() => buildActivitySeries(entries, ACTIVITY_DAYS), [entries]);
-  const hasActivity = entries.length > 0;
-  const recent = entries.slice(0, RECENT_LIMIT);
+  const recent = useMemo(() => entries.slice(0, RECENT_LIMIT), [entries]);
 
-  // Quick actions: the first module of each area the role can reach.
   const quickActions = useMemo(
     () => visibleGroups.slice(0, 6).map((group) => ({ group, module: group.modules[0] })),
     [visibleGroups],
   );
 
+  const recentColumns = useMemo(
+    () => [
+      {
+        key: 'entityType',
+        label: 'Record Type',
+        render: (row) => (
+          <span className="font-medium text-gray-900 dark:text-white">{row.entityType}</span>
+        ),
+      },
+      {
+        key: 'transition',
+        label: 'Transition',
+        render: (row) => (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge status={row.fromStatus} size="sm" />
+            <ArrowRight className="h-3 w-3 shrink-0 text-gray-400" />
+            <StatusBadge status={row.toStatus} size="sm" />
+          </span>
+        ),
+      },
+      {
+        key: 'useCaseCode',
+        label: 'Use Case',
+        render: (row) =>
+          row.useCaseCode ? (
+            <span className="font-mono text-xs text-gray-500 dark:text-slate-400">{row.useCaseCode}</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
+      },
+      {
+        key: 'isoClause',
+        label: 'ISO Clause',
+        render: (row) =>
+          row.isoClause ? (
+            <span className="text-xs text-gray-500 dark:text-slate-400">{row.isoClause}</span>
+          ) : (
+            <span className="text-gray-400">—</span>
+          ),
+      },
+      {
+        key: 'occurredAt',
+        label: 'Date',
+        align: 'right',
+        render: (row) => (
+          <span className="whitespace-nowrap text-xs text-gray-500 dark:text-slate-400">
+            {new Date(row.occurredAt).toLocaleString()}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
             Welcome{user?.name ? `, ${user.name}` : ''}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 text-[13px] text-gray-500 dark:text-slate-400">
             {moduleCount} module{moduleCount === 1 ? '' : 's'} across {visibleGroups.length} area
             {visibleGroups.length === 1 ? '' : 's'} available to your role.
           </p>
         </div>
-        <Button variant="outline" leadingIcon={IconRefresh} onClick={loadActivity} disabled={isLoading}>
+        <Button variant="outline" leadingIcon={RefreshCw} onClick={loadActivity} disabled={isLoading}>
           Refresh
         </Button>
       </div>
@@ -158,7 +227,7 @@ export default function Dashboard() {
           role="alert"
           className="flex items-start gap-2.5 rounded-card border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
         >
-          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0">
             <p className="font-medium">Could not load workflow activity</p>
             <p className="mt-0.5 break-words">{error}</p>
@@ -167,148 +236,116 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Total transitions"
-          value={stats.total}
+        <MetricCard
+          label="Total Transitions"
+          value={stats.total.toLocaleString()}
           hint="All recorded status changes"
-          icon={IconActivity}
-          tone="brand"
           isLoading={isLoading}
         />
-        <StatCard
-          label="Last 7 days"
-          value={stats.lastWeek}
-          hint="Transitions this week"
-          icon={IconClock}
-          tone="info"
+        <MetricCard
+          label="Last 7 Days"
+          value={stats.thisWeek.toLocaleString()}
+          comparison={stats.priorWeek > 0 ? `vs prior 7 days ${stats.priorWeek}` : 'No prior-week baseline'}
+          trend={stats.weekTrend !== null ? `${Math.abs(stats.weekTrend)}%` : undefined}
+          trendDirection={stats.weekTrend >= 0 ? 'up' : 'down'}
           isLoading={isLoading}
         />
-        <StatCard
+        <MetricCard
           label="Completions"
-          value={stats.completions}
-          hint="Moved to a successful state"
-          icon={IconCheckCircle}
-          tone="success"
+          value={stats.completions.toLocaleString()}
+          comparison={`${stats.completionRate}% of all transitions`}
           isLoading={isLoading}
         />
-        <StatCard
-          label="Record types"
-          value={stats.entityTypes}
+        <MetricCard
+          label="Record Types"
+          value={stats.entityTypes.toLocaleString()}
           hint="Entity types with activity"
-          icon={IconLayers}
-          tone="warning"
           isLoading={isLoading}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <Card className="flex flex-col xl:col-span-2">
-          <CardHeader>
-            <CardTitle>Workflow activity</CardTitle>
-            <CardDescription>Status transitions per day over the last {ACTIVITY_DAYS} days</CardDescription>
-          </CardHeader>
-          <CardBody className="flex flex-1 flex-col">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <DetailCard icon={BarChart3} title="Workflow Activity" className="xl:col-span-2">
+          <div>
+            <p className="mb-3 text-[13px] text-gray-500 dark:text-slate-400">
+              Status transitions per day over the last {ACTIVITY_DAYS} days
+            </p>
             {isLoading ? (
-              <Skeleton className="h-full min-h-56 w-full" />
-            ) : hasActivity ? (
-              <Suspense fallback={<Skeleton className="h-full min-h-56 w-full" />}>
+              <Skeleton className="h-64 w-full" />
+            ) : entries.length > 0 ? (
+              <Suspense fallback={<Skeleton className="h-64 w-full" />}>
                 <ActivityChart data={activitySeries} />
               </Suspense>
             ) : (
               <EmptyState
-                icon={IconActivity}
+                icon={Activity}
                 title="No workflow activity yet"
-                description="This chart draws from the audit log. Once records move through their approval steps, their transitions appear here."
+                description="This chart draws from the audit log. Transitions appear once records move through their approval steps."
               />
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </DetailCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent activity</CardTitle>
-            <CardDescription>Latest audit-log entries</CardDescription>
-          </CardHeader>
-          {isLoading ? (
-            <CardBody className="space-y-4">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <div key={index} className="space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              ))}
-            </CardBody>
-          ) : recent.length === 0 ? (
+        <DetailCard icon={Layers} title="Quick Actions">
+          {quickActions.length === 0 ? (
             <EmptyState
-              icon={IconClock}
+              icon={Layers}
+              title="No modules available"
+              description="Your role does not grant access to any module."
+            />
+          ) : (
+            <div className="space-y-2">
+              {quickActions.map(({ group, module }) => (
+                <Link
+                  key={group.key}
+                  to={`/modules/${module.key}`}
+                  className="group flex items-center gap-3 rounded-control border border-gray-200 px-3 py-2.5 transition-colors duration-200 hover:border-brand-300 hover:bg-brand-50/60 dark:border-slate-800 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-gray-900 dark:text-white">
+                      {group.label}
+                    </p>
+                    <p className="truncate text-[11px] text-gray-500 dark:text-slate-400">
+                      {group.modules.length} module{group.modules.length === 1 ? '' : 's'} ·{' '}
+                      {moduleConfig[module.key]?.label || module.label}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </DetailCard>
+      </div>
+
+      <section className="rounded-card border border-gray-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-slate-800">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Clock className="h-[18px] w-[18px] shrink-0 text-gray-400 dark:text-slate-500" strokeWidth={2} />
+            <div className="min-w-0">
+              <h2 className="truncate text-[15px] font-semibold text-gray-900 dark:text-white">
+                Recent Activity
+              </h2>
+              <p className="truncate text-xs text-gray-500 dark:text-slate-400">
+                Latest entries from the compliance audit log
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <DataTable
+          columns={recentColumns}
+          rows={recent}
+          isLoading={isLoading}
+          emptyState={
+            <EmptyState
+              icon={CheckCircle2}
               title="Nothing recorded yet"
               description="Approval steps taken in any module will show up here."
             />
-          ) : (
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {recent.map((entry) => (
-                <li key={entry._id} className="px-5 py-3.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm font-medium text-slate-900 dark:text-white">
-                      {entry.entityType}
-                    </span>
-                    <StatusBadge status={entry.fromStatus} size="sm" />
-                    <IconArrowRight className="h-3 w-3 shrink-0 text-slate-400" />
-                    <StatusBadge status={entry.toStatus} size="sm" />
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{new Date(entry.occurredAt).toLocaleString()}</span>
-                    {entry.isoClause && (
-                      <Badge tone="neutral" size="sm">
-                        <IconShield className="h-3 w-3" />
-                        ISO {entry.isoClause}
-                      </Badge>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick actions</CardTitle>
-          <CardDescription>Jump into the areas your role can access</CardDescription>
-        </CardHeader>
-        {quickActions.length === 0 ? (
-          <EmptyState
-            icon={IconLayers}
-            title="No modules available"
-            description="Your role does not currently grant access to any module."
-          />
-        ) : (
-          <CardBody className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {quickActions.map(({ group, module }) => (
-              <Link
-                key={group.key}
-                to={`/modules/${module.key}`}
-                className="group flex items-center gap-3 rounded-control border border-slate-200 bg-white p-3.5 transition-colors duration-200 hover:border-brand-300 hover:bg-brand-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/5"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-slate-100 text-slate-500 transition-colors duration-200 group-hover:bg-brand-100 group-hover:text-brand-600 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-brand-500/15 dark:group-hover:text-brand-400">
-                  <IconLayers className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-                    {group.label}
-                  </p>
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                    {group.modules.length} module{group.modules.length === 1 ? '' : 's'} ·{' '}
-                    {moduleConfig[module.key]?.label || module.label}
-                  </p>
-                </div>
-                <IconArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-slate-600" />
-              </Link>
-            ))}
-          </CardBody>
-        )}
-      </Card>
+          }
+        />
+      </section>
     </div>
   );
 }

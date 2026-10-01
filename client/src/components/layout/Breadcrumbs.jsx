@@ -24,6 +24,11 @@ export default function Breadcrumbs() {
     crumbs.push({ label: location.pathname });
   }
 
+  // A lone crumb just repeats the page title the TopBar already shows.
+  if (crumbs.length < 2) {
+    return null;
+  }
+
   return (
     <nav aria-label="Breadcrumb" className="min-w-0">
       <ol className="flex items-center gap-1 text-[13px]">
